@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WebGL Hello world</title>
 </head>
+
 <body>
   <canvas width="300" height="300"></canvas>
   <script>
@@ -12,7 +14,7 @@
 
     // 通过方法getContext()获取WebGL上下文
     const gl = canvas.getContext('webgl');
-    
+
     // 顶点着色器源码
     const vertex = `
       attribute vec2 position;
@@ -71,9 +73,7 @@
 
     // 顶点坐标的数据
     const points = new Float32Array([
-      -1, -1,
-      0, 1,
-      1, -1,
+      0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5
     ]);
 
     // 创建缓冲区对象
@@ -96,7 +96,8 @@
 
     gl.clear(gl.COLOR_BUFFER_BIT);
     // 开始绘制图形
-    gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
+    gl.drawArrays(gl.LINE_LOOP, 0, 4);
   </script>
 </body>
+
 </html>
