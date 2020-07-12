@@ -492,3 +492,41 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
 ```
 
+## 4. 仿射变换
+
+仿射变换简单来说就是“线性变换 + 平移”  
+
+1. 仿射变换前是直线段的，仿射变换后依然是直线段  
+
+2. 对两条直线段 a 和 b 应用同样的仿射变换，变换前后线段长度比例保持不变  
+
+### 4.1. 向量的平移、旋转与缩放
+
+常见的仿射变换形式包括平移、旋转、缩放以及它们的组合。其中，平移变换是最简单的仿射变换。如果我们想让向量 P(x0, y0) 沿着向量 Q(x1, y1) 平移，只要将 P 和 Q 相加就可以了。  
+
+x=x0+x1  
+y=y0+y1  
+
+旋转变换  
+
+```js
+class Vector2D {
+  ...  
+  rotate(rad) {
+    const c = Math.cos(rad),
+      s = Math.sin(rad);
+    const [x, y] = this;
+
+    this.x = x * c + y * -s;
+    this.y = x * s + y * c;
+
+    return this;
+  }
+}
+```
+
+
+
+
+
+
