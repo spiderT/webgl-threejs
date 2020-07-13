@@ -525,8 +525,182 @@ class Vector2D {
 }
 ```
 
+![p1](images/p1.jpg)
+
+假设向量 P 的长度为 r，角度是⍺，现在我们要将它顺时针旋转⍬角，此时新的向量 P’的参数方程为：
+
+![p2](images/p2.jpeg)
+
+因为 rcos⍺、rsin⍺是向量 P 原始的坐标 x0、y0，所以，我们可以把坐标代入到上面的公式中，就会得到如下的公式：
+
+![p3](images/p3.jpeg)
+
+我们再将它写成矩阵形式，就会得到一个旋转矩阵。
+
+![p4](images/p4.jpeg)
+
+### 4.2. 缩放变换
+
+直接让向量与标量（标量只有大小、没有方向）相乘。  
+
+x = sx x0  
+y = sy y0  
+
+### 4.3. 仿射变换的应用：实现粒子动画
+
+在一定时间内生成许多随机运动的小图形，这类动画通常是通过给人以视觉上的震撼，来达到获取用户关注的效果。  
+
+粒子动画的运行效果，是从一个点开始发射出许多颜色、大小、角度各异的三角形，并且通过不断变化它们的位置，产生一种撒花般的视觉效果。  
+
+#### 4.3.1. 创建三角形
+
+定义三角形的顶点并将数据送到缓冲区
+
+```js
+
+const position = new Float32Array([
+  -1, -1,
+  0, 1,
+  1, -1,
+]);
+const bufferId = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+gl.bufferData(gl.ARRAY_BUFFER, position, gl.STATIC_DRAW);
+
+const vPosition = gl.getAttribLocation(program, 'position');
+gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+gl.enableVertexAttribArray(vPosition);
+```
+
+创建随机三角形属性  
+
+```js
+
+function randomTriangles() {
+  const u_color = [Math.random(), Math.random(), Math.random(), 1.0]; // 随机颜色
+  const u_rotation = Math.random() * Math.PI; // 初始旋转角度
+  const u_scale = Math.random() * 0.05 + 0.03; // 初始大小
+  const u_time = 0;
+  const u_duration = 3.0; // 持续3秒钟
+
+  const rad = Math.random() * Math.PI * 2;
+  const u_dir = [Math.cos(rad), Math.sin(rad)]; // 运动方向
+  const startTime = performance.now();
+
+  return {u_color, u_rotation, u_scale, u_time, u_duration, u_dir, startTime};
+}
+
+```
+
+#### 4.3.2. 设置 uniform 变量
+
+uniform 声明的变量和其他语言中的常量一样，我们赋给 unform 变量的值在 shader 执行的过程中不可改变。而且一个变量的值是唯一的，不随顶点变化。uniform 变量既可以在顶点着色器中使用，也可以在片元着色器中使用。
+
+```js
+
+function setUniforms(gl, {u_color, u_rotation, u_scale, u_time, u_duration, u_dir}) {
+  // gl.getUniformLocation 拿到uniform变量的指针
+  let loc = gl.getUniformLocation(program, 'u_color');
+  // 将数据传给 unfirom 变量的地址
+  gl.uniform4fv(loc, u_color);
+
+  loc = gl.getUniformLocation(program, 'u_rotation');
+  gl.uniform1f(loc, u_rotation);
+
+  loc = gl.getUniformLocation(program, 'u_scale');
+  gl.uniform1f(loc, u_scale);
+
+  loc = gl.getUniformLocation(program, 'u_time');
+  gl.uniform1f(loc, u_time);
+
+  loc = gl.getUniformLocation(program, 'u_duration');
+  gl.uniform1f(loc, u_duration);
+
+  loc = gl.getUniformLocation(program, 'u_dir');
+  gl.uniform2fv(loc, u_dir);
+}
+```
+
+顶点着色器中的 glsl 代码
+
+```js
+
+attribute vec2 position;
+
+uniform float u_rotation;
+uniform float u_time;
+uniform float u_duration;
+uniform float u_scale;
+uniform vec2 u_dir;
+
+varying float vP;
+
+void main() {
+  float p = min(1.0, u_time / u_duration);
+  float rad = u_rotation + 3.14 * 10.0 * p;
+  float scale = u_scale * p * (2.0 - p);
+  vec2 offset = 2.0 * u_dir * p * p;
+  mat3 translateMatrix = mat3(
+    1.0, 0.0, 0.0,
+    0.0, 1.0, 0.0,
+    offset.x, offset.y, 1.0
+  );
+  mat3 rotateMatrix = mat3(
+    cos(rad), sin(rad), 0.0,
+    -sin(rad), cos(rad), 0.0,
+    0.0, 0.0, 1.0
+  );
+  mat3 scaleMatrix = mat3(
+    scale, 0.0, 0.0,
+    0.0, scale, 0.0,
+    0.0, 0.0, 1.0
+  );
+  gl_PointSize = 1.0;
+  vec3 pos = translateMatrix * rotateMatrix * scaleMatrix * vec3(position, 1.0);
+  gl_Position = vec4(pos, 1.0);
+  vP = p;
+}
+```
+
+在片元着色器中着色
+
+```js
+
+ precision mediump float;
+  uniform vec4 u_color;
+  varying float vP;
+
+  void main()
+  {
+    gl_FragColor.xyz = u_color.xyz;
+    gl_FragColor.a = (1.0 - vP) * u_color.a;
+  }  
+```
 
 
+#### 4.4.3. 用 requestAnimationFrame 实现动画
 
+```js
 
+let triangles = [];
 
+function update() {
+  for(let i = 0; i < 5 * Math.random(); i++) {
+    triangles.push(randomTriangles());
+  }
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  // 对每个三角形重新设置u_time
+  triangles.forEach((triangle) => {
+    triangle.u_time = (performance.now() - triangle.startTime) / 1000;
+    setUniforms(gl, triangle);
+    gl.drawArrays(gl.TRIANGLES, 0, position.length / 2);
+  });
+  // 移除已经结束动画的三角形
+  triangles = triangles.filter((triangle) => {
+    return triangle.u_time <= triangle.u_duration;
+  });
+  requestAnimationFrame(update);
+}
+
+requestAnimationFrame(update);
+```
