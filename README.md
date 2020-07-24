@@ -1,6 +1,14 @@
 # webgl-learn
 
-## 1. 工作原理
+分为webgl 和 three.js 两部分学习  
+
+参考资料：  
+[webgl教程](https://webglfundamentals.org/webgl/lessons/zh_cn/)  
+[Three.js教程](http://www.webgl3d.cn/Three.js/)  
+
+## webgl
+
+### 1. 工作原理
 
 WebGL在电脑的GPU中运行。因此你需要使用能够在GPU上运行的代码。 这样的代码需要提供成对的方法。每对方法中一个叫顶点着色器， 另一个叫片断着色器，并且使用一种和C或C++类似的强类型的语言 GLSL。 (GL着色语言)。 每一对组合起来称作一个 program（着色程序）。  
 
@@ -28,11 +36,11 @@ WebGL绘制过程包括以下三步：
 
 ![WebGL绘制流程](images/webgl-1.png)
 
-## 2. 基础概念
+### 2. 基础概念
 
 WebGL每次绘制需要两个着色器， 一个顶点着色器和一个片断着色器，每一个着色器都是一个方法。 一个顶点着色器和一个片断着色器链接在一起放入一个着色程序中（或者只叫程序）。 一个典型的WebGL应用会有多个着色程序。
 
-### 2.1. 顶点着色器
+#### 2.1. 顶点着色器
 
 一个顶点着色器的工作是生成裁剪空间坐标值
 
@@ -50,7 +58,7 @@ void main() {
 2. Uniforms 全局变量 (在一次绘制中对所有顶点保持一致值)  
 3. Textures 纹理 (从像素或纹理元素中获取的数据)  
 
-#### 2.1.1. Attributes 属性
+##### 2.1.1. Attributes 属性
 
 创建缓冲
 
@@ -111,7 +119,7 @@ mat2   2*2的浮点矩阵
 mat3   3*3的浮点矩阵  
 mat4   4*4的浮点矩阵  
 
-#### 2.1.2. Uniforms 全局变量
+##### 2.1.2. Uniforms 全局变量
 
 全局变量在一次绘制过程中传递给着色器的值都一样，在下面的一个简单的例子中， 用全局变量给顶点着色器添加了一个偏移量
 
@@ -210,7 +218,7 @@ var someThingActiveLoc = gl.getUniformLocation(someProgram, "u_someThing.active"
 var someThingSomeVec2Loc = gl.getUniformLocation(someProgram, "u_someThing.someVec2");
 ```
 
-### 2.2. 片断着色器
+#### 2.2. 片断着色器
 
 一个片断着色器的工作是为当前光栅化的像素提供颜色值，通常是以下的形式
 
@@ -230,10 +238,11 @@ Uniforms 全局变量
 Textures 纹理  
 Varyings 可变量  
 
-#### 2.2.1. Uniform 全局变量（片断着色器中）
+##### 2.2.1. Uniform 全局变量（片断着色器中）
+
 同 Uniforms 全局变量.
 
-#### 2.2.2. Textures 纹理（片断着色器中）
+##### 2.2.2. Textures 纹理（片断着色器中）
 
 在着色器中获取纹理信息，可以先创建一个sampler2D类型全局变量，然后用GLSL方法texture2D 从纹理中提取信息。
 
@@ -275,7 +284,7 @@ gl.bindTexture(gl.TEXTURE_2D, tex);
 gl.uniform1i(someSamplerLoc, unit);
 ```
 
-#### 2.2.3. Varyings 可变量
+##### 2.2.3. Varyings 可变量
 
 可变量是一种顶点着色器给片断着色器传值的方式。  
 
@@ -294,13 +303,7 @@ void main() {
 }
 ```
 
-
-
-
-
-
-
-### 2.3. GLSL
+#### 2.3. GLSL
 
 全称是 Graphics Library Shader Language （图形库着色器语言），是着色器使用的语言.  
 
@@ -346,7 +349,7 @@ vec4 m = vec4(
   mix(v1.w, v2.w, f));
 ```
 
-## 3. 常用api
+### 3. 常用api
 
 1. gl.createShader——创建着色器对象  
 
@@ -492,7 +495,7 @@ gl.clear(gl.COLOR_BUFFER_BIT);
 gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
 ```
 
-## 4. 仿射变换
+### 4. 仿射变换
 
 仿射变换简单来说就是“线性变换 + 平移”  
 
@@ -500,7 +503,7 @@ gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
 
 2. 对两条直线段 a 和 b 应用同样的仿射变换，变换前后线段长度比例保持不变  
 
-### 4.1. 向量的平移、旋转与缩放
+#### 4.1. 向量的平移、旋转与缩放
 
 常见的仿射变换形式包括平移、旋转、缩放以及它们的组合。其中，平移变换是最简单的仿射变换。如果我们想让向量 P(x0, y0) 沿着向量 Q(x1, y1) 平移，只要将 P 和 Q 相加就可以了。  
 
@@ -539,20 +542,20 @@ class Vector2D {
 
 ![p4](images/p4.jpeg)
 
-### 4.2. 缩放变换
+#### 4.2. 缩放变换
 
 直接让向量与标量（标量只有大小、没有方向）相乘。  
 
 x = sx x0  
 y = sy y0  
 
-### 4.3. 仿射变换的应用：实现粒子动画
+#### 4.3. 仿射变换的应用：实现粒子动画
 
 在一定时间内生成许多随机运动的小图形，这类动画通常是通过给人以视觉上的震撼，来达到获取用户关注的效果。  
 
 粒子动画的运行效果，是从一个点开始发射出许多颜色、大小、角度各异的三角形，并且通过不断变化它们的位置，产生一种撒花般的视觉效果。  
 
-#### 4.3.1. 创建三角形
+##### 4.3.1. 创建三角形
 
 定义三角形的顶点并将数据送到缓冲区
 
@@ -592,7 +595,7 @@ function randomTriangles() {
 
 ```
 
-#### 4.3.2. 设置 uniform 变量
+##### 4.3.2. 设置 uniform 变量
 
 uniform 声明的变量和其他语言中的常量一样，我们赋给 unform 变量的值在 shader 执行的过程中不可改变。而且一个变量的值是唯一的，不随顶点变化。uniform 变量既可以在顶点着色器中使用，也可以在片元着色器中使用。
 
@@ -677,8 +680,7 @@ void main() {
   }  
 ```
 
-
-#### 4.4.3. 用 requestAnimationFrame 实现动画
+##### 4.4.3. 用 requestAnimationFrame 实现动画
 
 ```js
 
@@ -705,9 +707,9 @@ function update() {
 requestAnimationFrame(update);
 ```
 
-## 5. 绘制重复图案
+### 5. 绘制重复图案
 
-### 5.1. 使用 background-image 来绘制重复图案
+#### 5.1. 使用 background-image 来绘制重复图案
 
 ```css
 canvas {
@@ -721,7 +723,7 @@ canvas {
 
 ![网格图](images/p5.jpeg)
 
-### 5.2. 使用 Shader 来绘制重复图案
+#### 5.2. 使用 Shader 来绘制重复图案
 
 利用 GPU 并行计算的特点，使用着色器来绘制背景网格这样的重复图案。
 
@@ -795,3 +797,389 @@ renderer.setMeshData([{
 }]);
 
 ```
+
+## three.js
+
+Three.js是基于原生WebGL封装运行的三维引擎
+
+### 1. 程序结构
+
+![程序结构](images/threejs1.png)
+
+demo1 创建一个立方体
+
+```js
+// 创建场景对象Scene
+const scene = new THREE.Scene();
+
+// 创建网格模型
+const geometry = new THREE.BoxGeometry(100, 100, 100); //创建一个立方体几何对象Geometry
+const material = new THREE.MeshLambertMaterial({
+  color: 0x0000ff
+});
+
+//材质对象Material
+const mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+scene.add(mesh); //网格模型添加到场景中
+
+// 光源设置
+//点光源
+const point = new THREE.PointLight(0xffffff);
+point.position.set(400, 200, 300); //点光源位置
+scene.add(point); //点光源添加到场景中
+
+//环境光
+const ambient = new THREE.AmbientLight(0x444444);
+scene.add(ambient);
+
+// 相机设置
+const width = window.innerWidth; //窗口宽度
+const height = window.innerHeight; //窗口高度
+const k = width / height; //窗口宽高比
+const s = 200; //三维场景显示范围控制系数，系数越大，显示的范围越大
+
+//创建相机对象
+const camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 1000);
+camera.position.set(200, 300, 200); //设置相机位置
+camera.lookAt(scene.position); //设置相机方向(指向的场景对象)
+
+// 创建渲染器对象
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(width, height); //设置渲染区域尺寸
+renderer.setClearColor(0xb9d3ff, 1); //设置背景颜色
+document.body.appendChild(renderer.domElement); //body元素中插入canvas对象
+
+//执行渲染操作   指定场景、相机作为参数
+renderer.render(scene, camera);
+```
+
+#### 1.1. 材质Material
+
+代码var material=new THREE.MeshLambertMaterial({color:0x0000ff});通过构造函数THREE.MeshLambertMaterial()创建了一个可以用于立方体的材质对象， 构造函数的参数是一个对象，对象包含了颜色、透明度等属性，本案例中只定义了颜色color，颜色属性值0x0000ff表示蓝色，可以把颜色值改为0x00ff00，可以看到是绿色的立方体效果， 这里使用的颜色值表示方法是16进制RGB三原色模型。 
+
+##### 材质属性
+
+color 材质颜色，比如蓝色0x0000ff  
+wireframe 将几何图形渲染为线框。 默认值为false  
+opacity 透明度设置，0表示完全透明，1表示完全不透明  
+transparent 是否开启透明，默认false  
+
+```js
+// 半透明效果
+var sphereMaterial=new THREE.MeshLambertMaterial({
+    color:0xff0000,
+    opacity:0.7,
+    transparent:true
+});
+```
+
+##### 添加高光效果
+
+处在光照条件下的物体表面会发生光的反射现象，不同的表面粗糙度不同，宏观上来看对光的综合反射效果，可以使用两个反射模型来概括，一个是漫反射，一个是镜面反射， 使用渲染软件或绘画的时候都会提到一个高光的概念，其实说的就是物理光学中镜面反射产生的局部高亮效果。  
+
+对于three.js而言漫反射、镜面反射分别对应两个构造函数MeshLambertMaterial()、MeshPhongMaterial(),通过three.js引擎你可以很容易实现这些光照模型，不需要自己再使用原生WebGL实现  
+
+```js
+// 添加高光效果
+var sphereMaterial=new THREE.MeshPhongMaterial({
+    color:0x0000ff,
+    specular:0x4488ee,
+    shininess:12
+});
+```
+
+#### 1.2. 光源Light
+
+代码var point=new THREE.PointLight(0xffffff);通过构造函数THREE.PointLight()创建了一个点光源对象，参数0xffffff定义的是光照强度， 你可以尝试把参数更改为为0x444444，刷新浏览器你会看到立方体的表面颜色变暗，这很好理解，实际生活中灯光强度变低了，周围的景物自然暗淡，three.js引擎对WebGL光照模型算法都进行了封装.  
+
+##### 常见光源类型
+
+AmbientLight 环境光  
+PointLight 点光源  
+DirectionalLight 平行光，比如太阳光  
+SpotLight 聚光源  
+
+```js
+// 环境光    环境光颜色与网格模型的颜色进行RGB进行乘法运算
+var ambient = new THREE.AmbientLight(0x444444);
+scene.add(ambient);
+```
+
+```js
+//点光源
+var point = new THREE.PointLight(0xffffff);
+point.position.set(400, 200, 300); //点光源位置
+// 通过add方法插入场景中，不插入的话，渲染的时候不会获取光源的信息进行光照计算
+scene.add(point); //点光源添加到场景中
+```
+
+#### 1.3. 相机Camera
+
+代码var camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 1000);通过构造函数THREE.OrthographicCamera()创建了一个正射投影相机对象， 把该构造函数参数中用到的参数s，也就是代码var s = 200;中定义的一个系数，可以把200更改为300,你会发现立方体显示效果变小，这很好理解，相机构造函数的的前四个参数定义的是拍照窗口大小， 就像平时拍照一样，取景范围为大，被拍的人相对背景自然变小了。  
+camera.position.set(200, 300, 200);和camera.lookAt(scene.position);定义的是相机的位置和拍照方向，可以更改camera.position.set(200,300,200);参数重新定义的相机位置，把第一个参数也就是x坐标从200更改为250， 你会发现立方的在屏幕上呈现的角度变了，这就像你生活中拍照人是同一个人，但是你拍照的位置角度不同，显示的效果肯定不同。  
+
+#### 1.4. 鼠标操作三维场景
+
+为了使用鼠标操作三维场景，可以借助three.js众多控件之一OrbitControls.js，可以在下载的three.js-master文件中找到(three.js-master\examples\js\controls)。  
+
+OrbitControls.js控件支持鼠标左中右键操作和键盘方向键操作，具体代码如下，使用下面的代码替换前面demo中renderer.render(scene,camera)即可。  
+
+```js
+function render() {
+  renderer.render(scene,camera);//执行渲染操作
+}
+render();
+var controls = new THREE.OrbitControls(camera,renderer.domElement);//创建控件对象
+controls.addEventListener('change', render);//监听鼠标、键盘事件
+```
+
+OrbitControls.js控件提供了一个构造函数THREE.OrbitControls()，把一个相机对象作为参数的时候，执行代码new THREE.OrbitControls(camera,renderer.domElement)，浏览器会自动检测鼠标键盘的变化， 并根据鼠标和键盘的变化更新相机对象的参数，比如你拖动鼠标左键，浏览器会检测到鼠标事件，把鼠标平移的距离按照一定算法转化为相机的的旋转角度，你可以联系生活中相机拍照,即使景物没有变化，你的相机拍摄角度发生了变化，自然渲染器渲染出的结果就变化了，通过定义监听事件controls.addEventListener('change', render)，如果你连续操作鼠标，相机的参数不停的变化，同时会不停的调用渲染函数render()进行渲染，这样threejs就会使用相机新的位置或角度数据进行渲染。  
+
+### 2. 几何体顶点
+
+几何体API  
+
+访问几何体顶点位置数据  BufferGeometry.attributes.position  
+访问几何体顶点颜色数据  BufferGeometry.attributes.color  
+访问几何体顶点法向量数据  BufferGeometry.attributes.normal  
+
+#### 2.1. 顶点位置数据解析渲染
+
+通过Threejs引擎的BufferGeometry和BufferAttribute两个API自定义了一个具有六个顶点数据的几何体。  
+
+```js
+var geometry = new THREE.BufferGeometry(); //创建一个Buffer类型几何体对象
+//类型数组创建顶点数据
+var vertices = new Float32Array([
+  0, 0, 0, //顶点1坐标
+  50, 0, 0, //顶点2坐标
+  0, 100, 0, //顶点3坐标
+  0, 0, 10, //顶点4坐标
+  0, 0, 100, //顶点5坐标
+  50, 0, 10, //顶点6坐标
+]);
+// 创建属性缓冲区对象
+var attribue = new THREE.BufferAttribute(vertices, 3); //3个为一组，表示一个顶点的xyz坐标
+// 设置几何体attributes属性的位置属性
+geometry.attributes.position = attribue;
+```
+
+##### 点模型Points
+
+可以把几何体geometry作为点模型Points而不是网格模型Mesh的参数，你会发现上面的六个点坐标会渲染为六个方形的点区域.
+
+```js
+// 点渲染模式
+var material = new THREE.PointsMaterial({
+  color: 0xff0000,
+  size: 10.0 //点对象像素尺寸
+}); //材质对象
+var points = new THREE.Points(geometry, material); //点模型对象
+scene.add(points); //点对象添加到场景中
+```
+
+##### 线模型Line
+
+```js
+// 线条渲染模式
+var material=new THREE.LineBasicMaterial({
+    color:0xff0000 //线条颜色
+});//材质对象
+var line=new THREE.Line(geometry,material);//线条模型对象
+scene.add(line);//线条对象添加到场景中
+```
+
+#### 2.2. 顶点颜色数据插值计算
+
+##### 每个顶点设置一种颜色
+
+几何体的六个顶点分别渲染为几何体设置的顶点颜色数据。
+
+```js
+var geometry = new THREE.BufferGeometry(); //声明一个缓冲几何体对象
+
+//类型数组创建顶点位置position数据
+var vertices = new Float32Array([
+  0, 0, 0, //顶点1坐标
+  50, 0, 0, //顶点2坐标
+  0, 100, 0, //顶点3坐标
+
+  0, 0, 10, //顶点4坐标
+  0, 0, 100, //顶点5坐标
+  50, 0, 10, //顶点6坐标
+]);
+// 创建属性缓冲区对象
+var attribue = new THREE.BufferAttribute(vertices, 3); //3个为一组，作为一个顶点的xyz坐标
+// 设置几何体attributes属性的位置position属性
+geometry.attributes.position = attribue;
+//类型数组创建顶点颜色color数据
+var colors = new Float32Array([
+  1, 0, 0, //顶点1颜色
+  0, 1, 0, //顶点2颜色
+  0, 0, 1, //顶点3颜色
+
+  1, 1, 0, //顶点4颜色
+  0, 1, 1, //顶点5颜色
+  1, 0, 1, //顶点6颜色
+]);
+// 设置几何体attributes属性的颜色color属性
+geometry.attributes.color = new THREE.BufferAttribute(colors, 3); //3个为一组,表示一个顶点的颜色数据RGB
+//材质对象
+var material = new THREE.PointsMaterial({
+  vertexColors: THREE.VertexColors, //以顶点颜色为准
+  size: 10.0 //点对象像素尺寸
+});
+// 点渲染模式  点模型对象Points
+var points = new THREE.Points(geometry, material); //点模型对象
+scene.add(points); //点对象添加到场景
+```
+
+#### 2.3. 顶点法向量数据光照计算
+
+WebGL中为了计算光线与物体表面入射角，你首先要计算物体表面每个位置的法线方向，在Threejs中表示物体的网格模型Mesh的曲面是由一个一个三角形构成，所以为了表示物体表面各个位置的法线方向，可以给几何体的每个顶点定义一个方向向量。
+
+```js
+var normals = new Float32Array([
+  0, 0, 1, //顶点1法向量
+  0, 0, 1, //顶点2法向量
+  0, 0, 1, //顶点3法向量
+
+  0, 1, 0, //顶点4法向量
+  0, 1, 0, //顶点5法向量
+  0, 1, 0, //顶点6法向量
+]);
+// 设置几何体attributes属性的位置normal属性
+geometry.attributes.normal = new THREE.BufferAttribute(normals, 3); //3个为一组,表示一个顶点的法向量数据
+```
+
+#### 2.4. 顶点索引复用顶点数据
+
+比如绘制一个矩形网格模型,至少需要两个三角形拼接而成，两个三角形，每个三角形有三个顶点，也就是说需要定义6个顶点位置数据。对于矩形网格模型而言，两个三角形有两个顶点位置是重合的。也就是说可以重复的位置可以定义一次，然后通过通过顶点数组的索引值获取这些顶点位置数据。  
+
+##### 顶点索引.index
+
+通过几何体BufferGeometry的顶点索引BufferGeometry.index定义了一个矩形。通过顶点索引组织网格模型三角形的绘制，因为矩形的两个三角形有两个顶点位置重复，所以顶点位置数据、顶点法向量数据都只需要定义4个就可以。
+
+```js
+ar geometry = new THREE.BufferGeometry(); //声明一个空几何体对象
+//类型数组创建顶点位置position数据
+var vertices = new Float32Array([
+  0, 0, 0, //顶点1坐标
+  80, 0, 0, //顶点2坐标
+  80, 80, 0, //顶点3坐标
+  0, 80, 0, //顶点4坐标
+]);
+// 创建属性缓冲区对象
+var attribue = new THREE.BufferAttribute(vertices, 3); //3个为一组
+// 设置几何体attributes属性的位置position属性
+geometry.attributes.position = attribue
+var normals = new Float32Array([
+  0, 0, 1, //顶点1法向量
+  0, 0, 1, //顶点2法向量
+  0, 0, 1, //顶点3法向量
+  0, 0, 1, //顶点4法向量
+]);
+// 设置几何体attributes属性的位置normal属性
+geometry.attributes.normal = new THREE.BufferAttribute(normals, 3); //3个为一组,表示一个顶点的xyz坐标
+```
+
+通过顶点索引组织顶点数据，顶点索引数组indexes通过索引值指向顶点位置geometry.attributes.position、顶点法向量geometry.attributes.normal中顶面数组。
+
+```js
+// Uint16Array类型数组创建顶点索引数据
+var indexes = new Uint16Array([
+  // 0对应第1个顶点位置数据、第1个顶点法向量数据
+  // 1对应第2个顶点位置数据、第2个顶点法向量数据
+  // 索引值3个为一组，表示一个三角形的3个顶点
+  0, 1, 2,
+  0, 2, 3,
+])
+// 索引数据赋值给几何体的index属性
+geometry.index = new THREE.BufferAttribute(indexes, 1); //1个为一组
+```
+
+| 类型数组 | 位数 | 字节 | 类型描述 |
+| Int8Array | 8 | 1 | 有符号8位整型 |
+| Uint8Array | 8 | 1 | 无符号8位整型 |
+| Int16Array | 16 | 2 | 有符号16位整型 |
+| Uint16Array | 16 | 2 | 无符号16位整型 |
+| Int32Array | 32 | 4 | 有符号32位整型 | int32_t |
+| Uint32Array | 32 | 4 | 无符号32位整型 | uint32_t |
+| Float32Array | 32 | 4 | 单精度(32位)浮点数 | float |
+| Float64Array | 64 | 8 | 双精度(64位)浮点数 | double |
+
+#### 2.5. Face3对象定义Geometry的三角形面
+
+几何体Geometry的三角面属性geometry.faces和缓冲类型几何体BufferGeometry顶点索引属性BufferGeometry.index类似都是顶点位置数据的索引值,用来组织网格模型三角形的绘制。  
+
+通过Face3构建一个三角形，不要设置顶点位置坐标数据，只需要通过数组索引值从geometry.vertices数组中获得顶点位置坐标数据。  
+
+geometry.vertices数组索引0, 1, 2对应的顶点位置坐标数据表示三角形1的三个顶点坐标，索引0, 2, 3对应的顶点位置坐标数据表示三角形2的三个顶点坐标。  
+
+```js
+// Face3构造函数创建一个三角面
+var face1 = new THREE.Face3(0, 1, 2);
+// 三角面2
+var face2 = new THREE.Face3(0, 2, 3);
+```
+
+##### 三角形法线设置
+
+网格模型Mesh的几何体Geometry本质上都是一个一个三角形拼接而成，所以可以通过设置三角形的法线方向向量来表示几何体表面各个位置的法线方向向量。  
+
+设置三角形法线方向向量有两种方式，一种是直接定义三角形面的法线方向，另一个是定义三角形三个顶点的法线方向数据来表示三角形面法线方向。  
+
+使用三维向量THREE.Vector3表示三角形法线方向数值，然后赋值给三角形对象Face3的法线属性Face3.normal。  
+
+```js
+// 三角面2
+var face2 = new THREE.Face3(0, 2, 3);
+// 设置三角面法向量
+face2.normal=new THREE.Vector3(0, -1, 0);
+```
+
+换另一种方式，通过三角形面Face3的Face3.vertexNormals属性给三角形的三个顶点分别设置一个顶点法线方向数据。
+
+```js
+// Face3构造函数创建一个三角面
+var face1 = new THREE.Face3(0, 1, 2);
+//三角面每个顶点的法向量
+var n1 = new THREE.Vector3(0, 0, -1); //三角面Face1顶点1的法向量
+var n2 = new THREE.Vector3(0, 0, -1); //三角面2Face2顶点2的法向量
+var n3 = new THREE.Vector3(0, 0, -1); //三角面3Face3顶点3的法向量
+// 设置三角面Face3三个顶点的法向量
+face1.vertexNormals.push(n1,n2,n3);
+```
+
+##### 三角形颜色设置
+
+三角形颜色设置和三角形法线方向设置类型，可以直接设置三角形颜色，也可以设置三角形三个顶点的颜色。
+
+```js
+// 三角形1颜色
+face1.color = new THREE.Color(0xffff00);
+// 设置三角面face1三个顶点的颜色
+face1.color = new THREE.Color(0xff00ff);
+```
+
+三个顶点颜色不同三角形面渲染的时候会进行颜色插值计算，测到一个颜色渐变效果。
+
+```js
+face1.vertexColors = [
+  new THREE.Color(0xffff00),
+  new THREE.Color(0xff00ff),
+  new THREE.Color(0x00ffff),
+]
+```
+
+#### 2.6. 访问几何体对象的数据
+
+调用BoxGeometry创建一个立方体，执行THREE.BoxGeometry构造函数会自动生成几何体对象的顶点位置坐标、顶点法向量等数据。
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //创建一个立方体几何对象Geometry
+console.log(geometry);
+console.log('几何体顶点位置数据',geometry.vertices);
+console.log('三角行面数据',geometry.faces);
+```
+
