@@ -1183,3 +1183,47 @@ console.log('几何体顶点位置数据',geometry.vertices);
 console.log('三角行面数据',geometry.faces);
 ```
 
+```js
+//创建一个矩形平面几何体
+var geometry = new THREE.PlaneBufferGeometry(100, 100);
+console.log(geometry);
+console.log('几何体顶点位置数据',geometry.attributes.position);
+console.log('几何体索引数据',geometry.index);
+```
+
+#### 2.7. 几何体旋转、缩放、平移变换
+
+![threejs](images/threejs2.png)
+
+通过.scale()、.translate()、.rotateX()等方法可以对几何体本身进行缩放、平移、旋转等几何变换。这些方法对几何体进行变换，注意本质上都是改变结合体顶点位置坐标数据。  
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //创建一个立方体几何对象Geometry
+// 几何体xyz三个方向都放大2倍
+geometry.scale(2, 2, 2);
+// 几何体沿着x轴平移50
+geometry.translate(50, 0, 0);
+// 几何体绕着x轴旋转45度
+geometry.rotateX(Math.PI / 4);
+// 居中：偏移的几何体居中
+geometry.center();
+console.log(geometry.vertices)
+```
+
+> 注意网格模型Mesh进行缩放旋转平移变换和几何体Geometry可以实现相同的渲染效果，但是网格模型Mesh进行这些变换不会影响几何体的顶点位置坐标，网格模型缩放旋转平移变换改变的是模型的本地矩阵、世界矩阵。  
+
+```js
+// 几何体xyz方向分别缩放0.5,1.5,2倍
+geometry.scale(0.5, 1.5, 2);
+
+// 网格模型xyz方向分别缩放0.5,1.5,2倍
+mesh.scale.set(0.5, 1.5, 2)
+```
+
+
+
+
+
+
+
+
