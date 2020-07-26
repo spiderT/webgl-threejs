@@ -1220,10 +1220,189 @@ geometry.scale(0.5, 1.5, 2);
 mesh.scale.set(0.5, 1.5, 2)
 ```
 
+### 3. 材质
+
+所有材质就是对WebGL着色器代码的封装
+
+![材质](images/threejs3.png)
+
+#### 3.1. 点材质PointsMaterial
+
+点材质PointsMaterial的.size属性可以每个顶点渲染的方形区域尺寸像素大小。
+
+```js
+var geometry = new THREE.SphereGeometry(100, 25, 25); //创建一个球体几何对象
+// 创建一个点材质对象
+var material = new THREE.PointsMaterial({
+  color: 0x0000ff, //颜色
+  size: 3, //点渲染尺寸
+});
+//点模型对象  参数：几何体  点材质
+var point = new THREE.Points(geometry, material);
+scene.add(point); //网格模型添加到场景中
+```
+
+#### 3.2. 线材质
+
+线材质有基础线材质LineBasicMaterial和虚线材质LineDashedMaterial两个，通常使用使用Line等线模型才会用到线材质。
+
+```js
+var geometry = new THREE.SphereGeometry(100, 25, 25);//球体
+// 直线基础材质对象
+var material = new THREE.LineBasicMaterial({
+  color: 0x0000ff
+});
+var line = new THREE.Line(geometry, material); //线模型对象
+scene.add(line); //点模型添加到场景中
 
 
+// 虚线材质对象：产生虚线效果
+var material = new THREE.LineDashedMaterial({
+  color: 0x0000ff,
+  dashSize: 10,//显示线段的大小。默认为3。
+  gapSize: 5,//间隙的大小。默认为1
+});
+var line = new THREE.Line(geometry, material); //线模型对象
+//  computeLineDistances方法  计算LineDashedMaterial所需的距离数组
+line.computeLineDistances();
+```
+
+#### 3.3. 网格材质
+
+网格类模型才会使用的材质对象。
+
+```js
+// 基础网格材质对象MeshBasicMaterial,不受带有方向光源影响，没有棱角感。
+var material = new THREE.MeshBasicMaterial({
+  color: 0x0000ff,
+})
 
 
+// MeshLambertMaterial材质可以实现网格Mesh表面与光源的漫反射光照计算，有了光照计算，物体表面分界的位置才会产生棱角感。
+var material = new THREE.MeshLambertMaterial({
+  color: 0x00ff00,
+});
+
+// 高光网格材质MeshPhongMaterial除了和MeshLambertMaterial一样可以实现光源和网格表面的漫反射光照计算，还可以产生高光效果(镜面反射)。
+var material = new THREE.MeshPhongMaterial({
+  color: 0xff0000,
+  specular:0x444444,//高光部分的颜色
+  shininess:20,//高光部分的亮度，默认30
+});
+```
+
+#### 3.4. 材质和模型对象对应关系
+
+![材质](images/threejs4.png)
+
+#### 3.5. .side属性
+
+.side属性的属性值定义面的渲染方式前面后面 或 双面. 属性的默认值是THREE.FrontSide，表示前面. 也可以设置为后面THREE.BackSide 或 双面THREE.DoubleSide.
+
+```js
+var material = new THREE.MeshBasicMaterial({
+  color: 0xdd00ff,
+  // 前面FrontSide  背面：BackSide 双面：DoubleSide
+  side:THREE.DoubleSide,
+});
+```
+
+#### 3.6. 材质透明度.opacity
+
+通过材质的透明度属性.opacity可以设置材质的透明程度，.opacity属性值的范围是0.0~1.0，0.0值表示完全透明, 1.0表示完全不透明，.opacity默认值1.0。  
+当设置.opacity属性值的时候，需要设置材质属性transparent值为true，如果材质的transparent属性没设置为true, 材质会保持完全不透明状态。
+
+```js
+// 在构造函数参数中设置transparent和.opacity的属性值
+var material = new THREE.MeshPhongMaterial({
+  color: 0x220000,
+  // transparent设置为true，开启透明，否则opacity不起作用
+  transparent: true,
+  // 设置材质透明度
+  opacity: 0.4,
+});
 
 
+//通过访问材质对象属性形式设置transparent和.opacity的属性值
+  // transparent设置为true，开启透明，否则opacity不起作用
+material.transparent = true;
+  // 设置材质透明度
+material.opacity = 0.4;
+```
 
+### 4. 点、线、网格模型
+
+点模型Points、线模型Line、网格网格模型Mesh都是由几何体Geometry和材质Material构成，这三种模型的区别在于对几何体顶点数据的渲染方式不同
+
+![点、线、网格模型](images/threejs5.png)
+
+#### 4.1. 点模型Points
+
+点模型Points就是几何体的每一个顶点数据渲染为一个方形区域，方形区域的大小可以设置。
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //创建一个立方体几何对象Geometry
+// 点渲染模式
+var material = new THREE.PointsMaterial({
+  color: 0xff0000,
+  size: 5.0 //点对象像素尺寸
+}); //材质对象
+var points = new THREE.Points(geometry, material); //点模型对象
+```
+
+#### 4.2. 线模型Line
+
+两点确定一条直线，线模型Line就是使用线条去连接几何体的顶点数据。  
+
+线模型除了Line还有LineLoop和LineSegments,LineLoop和Line区别是连线的时候会闭合把第一个顶点和最后一个顶点连接起来，LineSegments则是顶点不共享，第1、2点确定一条线，第3、4顶点确定一条直线，第2和3点之间不连接。  
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //创建一个立方体几何对象Geometry
+// 线条渲染模式
+var material=new THREE.LineBasicMaterial({
+    color:0xff0000 //线条颜色
+});//材质对象
+// 创建线模型对象   构造函数：Line、LineLoop、LineSegments
+var line=new THREE.Line(geometry,material);//线条模型对象
+```
+
+#### 4.3. 网格模型Mesh
+
+三个顶点确定一个三角形，网格模型Mesh默认的情况下，通过三角形面绘制渲染几何体的所有顶点，通过一系列的三角形拼接出来一个曲面。
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100);
+// 三角形面渲染模式  
+var material = new THREE.MeshLambertMaterial({
+  color: 0x0000ff, //三角面颜色
+}); //材质对象
+var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+```
+
+如果设置网格模型的wireframe属性为true，所有三角形会以线条形式绘制出来.
+
+```js
+var material = new THREE.MeshLambertMaterial({
+  color: 0x0000ff, //三角面颜色
+  wireframe:true,//网格模型以线条的模式渲染
+});
+
+// 通过访问属性的形式设置
+material.wireframe = true;
+```
+
+#### 4.4. 对象克隆.clone()和复制.copy()
+
+![对象克隆和复制](images/threejs6.png)
+
+1. 复制方法.copy()  
+
+A.copy(B)表示B属性的值赋值给A对应属性。  
+
+```js
+var p1 = new THREE.Vector3(1.2,2.6,3.2);
+var p2 = new THREE.Vector3(0.0,0.0,0.0);
+p2.copy(p1)
+// p2向量的xyz变为p1的xyz值
+console.log(p2);
+```
