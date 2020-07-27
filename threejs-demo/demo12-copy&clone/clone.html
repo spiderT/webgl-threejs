@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>three.js</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+  </style>
+
+</head>
+
+<body>
+  <script src="../three.min.js"></script>
+  <script>
+    var p1 = new THREE.Vector3(1.2, 2.6, 3.2);
+    var p2 = p1.clone();
+    // p2对象和p1对象xyz属性相同
+    console.log(p2); // m {x: 1.2, y: 2.6, z: 3.2}
+  </script>
+</body>
+
+</html>

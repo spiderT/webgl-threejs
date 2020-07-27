@@ -1406,3 +1406,472 @@ p2.copy(p1)
 // p2向量的xyz变为p1的xyz值
 console.log(p2);
 ```
+
+2. 克隆方法.clone()  
+
+N = M.copy()表示返回一个和M相同的对象赋值给N。  
+
+```js
+var p1 = new THREE.Vector3(1.2,2.6,3.2);
+var p2 = p1.clone();
+// p2对象和p1对象xyz属性相同
+console.log(p2);
+```
+
+3. 网格模型复制和克隆  
+
+网格模型复制克隆和三维向量基本逻辑是相同，但是注意三维向量Vector3的.x、.y、.z属性值是数字，也就是说是基本类型的数据，对于网格模型而言，网格模型对象的几何体属性mesh.geometry和材质属性mesh.material的属性值都是对象的索引值。  
+
+```js
+var box=new THREE.BoxGeometry(10,10,10);//创建一个立方体几何对象
+var material=new THREE.MeshLambertMaterial({color:0x0000ff});//材质对象
+
+
+var mesh=new THREE.Mesh(box,material);//网格模型对象
+var mesh2 = mesh.clone();//克隆网格模型
+mesh.translateX(20);//网格模型mesh平移
+
+scene.add(mesh,mesh2);//网格模型添加到场景中
+```
+
+缩放几何体box,你可以发现上面代码中的两个网格模型的大小都发生了变化，因为网格模型克隆的时候，mesh对象的几何体对象mesh.geometry属性值是box对象的索引值，返回的新对象mesh2几何体属性mesh.geometry的值同样是box对象的索引值。
+
+```js
+box.scale(1.5,1.5,1.5);//几何体缩放
+```
+
+几何体克隆或复制和网格模型在属性值深拷贝、浅拷贝方面有些不同，比如几何体的顶点属性Geometry.vertices，Geometry.vertices的属性值是一个数组对象，但是复制或克隆的时候，不是获得对象的索引值，而是深拷贝属性的值.  
+
+### 2.5. 光源
+
+![光源](images/threejs7.png)
+
+#### 2.5.1. 环境光AmbientLight
+
+环境光是没有特定方向的光源，主要是均匀整体改变Threejs物体表面的明暗效果，这一点和具有方向的光源不同，比如点光源可以让物体表面不同区域明暗程度不同。
+
+```js
+//环境光:环境光颜色RGB成分分别和物体材质颜色RGB成分分别相乘
+var ambient = new THREE.AmbientLight(0x444444);
+scene.add(ambient);//环境光对象添加到scene场景中
+```
+
+#### 2.5.2. 点光源PointLight
+
+点光源就像生活中的白炽灯，光线沿着发光核心向外发散，同一平面的不同位置与点光源光线入射角是不同的，点光源照射下，同一个平面不同区域是呈现出不同的明暗效果。  
+
+和环境光不同，环境光不需要设置光源位置，而点光源需要设置位置属性.position，光源位置不同，物体表面被照亮的面不同，远近不同因为衰减明暗程度不同。  
+
+你可以把案例源码中点光源位置从(400, 200, 300)位置改变到(-400, -200, -300)，你会发现网格模型被照亮的位置从前面变到了后面，这很正常，光源只能照亮面对着光源的面，背对着光源的无法照射到，颜色会比较暗。  
+
+```js
+//点光源
+var point = new THREE.PointLight(0xffffff);
+//设置点光源位置，改变光源的位置
+point.position.set(400, 200, 300);
+scene.add(point);
+```
+
+#### 2.5.3. 平行光DirectionalLight
+
+对于一个平面而言，平面不同区域接收到平行光的入射角一样。  
+
+点光源因为是向四周发散，所以设置好位置属性.position就可以确定光线和物体表面的夹角，对于平行光而言,主要是确定光线的方向,光线方向设定好了，光线的与物体表面入射角就确定了，仅仅设置光线位置是不起作用的。
+
+在三维空间中为了确定一条直线的方向只需要确定直线上两个点的坐标即可，所以Threejs平行光提供了位置.position和目标.target两个属性来一起确定平行光方向。目标.target的属性值可以是Threejs场景中任何一个三维模型对象，比如一个网格模型Mesh，这样Threejs计算平行光照射方向的时候，会通过自身位置属性.position和.target表示的物体的位置属性.position计算出来。  
+
+```js
+// 平行光
+var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+// 设置光源的方向：通过光源position属性和目标指向对象的position属性计算
+directionalLight.position.set(80, 100, 50);
+// 方向光指向对象网格模型mesh2，可以不设置，默认的位置是0,0,0
+directionalLight.target = mesh2;
+scene.add(directionalLight);
+```
+
+平行光如果不设置.position和.target属性，光线默认从上往下照射，也就是可以认为(0,1,0)和(0,0,0)两个坐标确定的光线方向。  
+
+注意一点平行光光源的位置属性.position并不表示平行光从这个位置向远处照射，.position属性只是用来确定平行光的照射方向，平行光你可以理解为太阳光，从无限远处照射过来。  
+
+#### 2.5.4. 聚光源SpotLight
+
+聚光源可以认为是一个沿着特定方会逐渐发散的光源，照射范围在三维空间中构成一个圆锥体。通过属性.angle可以设置聚光源发散角度，聚光源照射方向设置和平行光光源一样是通过位置.position和目标.target两个属性来实现。  
+
+```js
+// 聚光光源
+var spotLight = new THREE.SpotLight(0xffffff);
+// 设置聚光光源位置
+spotLight.position.set(200, 200, 200);
+// 聚光灯光源指向网格模型mesh2
+spotLight.target = mesh2;
+// 设置聚光光源发散角度
+spotLight.angle = Math.PI / 6
+scene.add(spotLight);//光对象添加到scene场景中
+```
+
+#### 2.5.5. 光照计算算法
+
+Threejs在渲染的时候网格模型材质的颜色值mesh.material.color和光源的颜色值light.color会进行相乘，简单说就是RGB三个分量分别相乘。  
+
+平行光漫反射简单数学模型：漫反射光的颜色 = 网格模型材质颜色值 x 光线颜色 x 光线入射角余弦值  
+
+漫反射数学模型RGB分量表示：(R2,G2,B2) = (R1,G1,B1) x (R0,G0,B0) x cosθ  
+
+R2 = R1 * R0 * cosθ  
+G2 = G1 * G0 * cosθ  
+B2 = B1 * B0 * cosθ  
+
+比如把网格模型的颜色设置为白色0xffffff,也就意味着可以反射任意光照颜色，然后把环境光和点光源只保留红色成分，绿色和蓝色成分都设置为0。你可以看到网格模型会把渲染为红色。  
+
+```js
+// 网格模型材质设置为白色
+var geometry = new THREE.BoxGeometry(100, 100, 100); //
+var material = new THREE.MeshLambertMaterial({
+  color: 0xffffff
+});
+var mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+//环境光   环境光颜色RGB成分分别和物体材质颜色RGB成分分别相乘
+var ambient = new THREE.AmbientLight(0x440000);
+scene.add(ambient);//环境光对象添加到scene场景中
+//点光源
+var point = new THREE.PointLight(0xff0000);
+//设置点光源位置  光源对象和模型对象的position属性一样是Vector3对象
+//PointLight的基类是Light  Light的基类是Object3D  点光源对象继承Object3D对象的位置属性position
+point.position.set(400, 200, 300);
+scene.add(point);
+```
+
+把网格模型设置为纯蓝色0x0000ff,光源颜色只保留红色成分不变，你可以看到网格模型的渲染效果是黑色，因为这两个颜色相乘总有一个RGB分量为0，相乘的结果是0x00000,也就是黑色。
+
+#### 2.5.6. 平行光投影计算代码
+
+Three.js物体投影模拟计算主要设置三部分，一个是设置产生投影的模型对象，一个是设置接收投影效果的模型，最后一个是光源对象本身的设置，光源如何产生投影。  
+
+```js
+//创建一个平面几何体作为投影面
+var planeGeometry = new THREE.PlaneGeometry(300, 200);
+var planeMaterial = new THREE.MeshLambertMaterial({
+  color: 0x999999
+});
+// 平面网格模型作为投影面
+var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+scene.add(planeMesh); //网格模型添加到场景中
+planeMesh.rotateX(-Math.PI / 2); //旋转网格模型
+planeMesh.position.y = -50; //设置网格模型y坐标
+// 设置接收阴影的投影面
+planeMesh.receiveShadow = true;
+
+// 方向光
+var directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+// 设置光源位置
+directionalLight.position.set(60, 100, 40);
+scene.add(directionalLight);
+// 设置用于计算阴影的光源对象
+directionalLight.castShadow = true;
+// 设置计算阴影的区域，最好刚好紧密包围在对象周围
+// 计算阴影的区域过大：模糊  过小：看不到或显示不完整
+directionalLight.shadow.camera.near = 0.5;
+directionalLight.shadow.camera.far = 300;
+directionalLight.shadow.camera.left = -50;
+directionalLight.shadow.camera.right = 50;
+directionalLight.shadow.camera.top = 200;
+directionalLight.shadow.camera.bottom = -100;
+// 设置mapSize属性可以使阴影更清晰，不那么模糊
+// directionalLight.shadow.mapSize.set(1024,1024)
+console.log(directionalLight.shadow.camera);
+```
+
+.castShadow属性值是布尔值，默认false，用来设置一个模型对象是否在光照下产生投影效果。  
+
+mesh.castShadow = true;  
+
+.receiveShadow属性值是布尔值，默认false，用来设置一个模型对象是否在光照下接受其它模型的投影效果。  
+
+planeMesh.receiveShadow = true;  
+
+光源.castShadow属性  
+如果属性设置为 true， 光源将投射动态阴影. 警告: 这需要很多计算资源，需要调整以使阴影看起来正确.  
+
+directionalLight.castShadow = true;
+
+#### 2.5.7. 聚光光源投影计算
+
+下面代码是聚光光源的设置，其它部分代码和平行光一样。
+
+```js
+// 聚光光源
+var spotLight = new THREE.SpotLight(0xffffff);
+// 设置聚光光源位置
+spotLight.position.set(50, 90, 50);
+// 设置聚光光源发散角度
+spotLight.angle = Math.PI /6
+scene.add(spotLight); //光对象添加到scene场景中
+// 设置用于计算阴影的光源对象
+spotLight.castShadow = true;
+// 设置计算阴影的区域，注意包裹对象的周围
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far = 300;
+spotLight.shadow.camera.fov = 20;
+```
+
+LightShadow属性.camera  
+观察光源的相机对象. 从光的角度来看，以相机对象的观察位置和方向来判断，其他物体背后的物体将处于阴影中。  
+
+```js
+// 聚光源设置
+spotLight.shadow.camera.near = 1;
+spotLight.shadow.camera.far = 300;
+spotLight.shadow.camera.fov = 20;
+```
+
+LightShadow属性.mapSize  
+定义阴影纹理贴图宽高尺寸的一个二维向量Vector2.  
+
+较高的值会以计算时间为代价提供更好的阴影质量. 宽高分量值必须是2的幂, 直到给定设备的WebGLRenderer.capabilities.maxTextureSize, 尽管宽度和高度不必相同 (例如，(512, 1024)是有效的). 默认值为 ( 512, 512 ).  
+
+```js
+directionalLight.shadow.mapSize.set(1024,1024)
+```
+
+LightShadow属性.map  
+该属性的值是WebGL渲染目标对象WebGLRenderTarget，使用内置摄像头生成的深度图; 超出像素深度的位置在阴影中。 在渲染期间内部计算。
+
+### 2.6. 层级模型、树结构
+
+所谓层级模型，比如一个机器人，人头、胳膊都是人的一部分，眼睛是头的一部分，手是个胳膊的一部分，手指是手的一部分...这样的话就构成一个一个层级结构或者说树结构。  
+
+#### 2.6.1. 组对象Group、层级模型
+
+![结构](images/threejs8.png)
+
+下面代码代码创建了两个网格模型mesh1、mesh2，通过THREE.Group类创建一个组对象group,然后通过add方法把网格模型mesh1、mesh2作为设置为组对象group的子对象，然后在通过执行scene.add(group)把组对象group作为场景对象的scene的子对象。也就是说场景对象是scene是group的父对象，group是mesh1、mesh2的父对象。这样就构成了一个三层的层级结构，
+
+```js
+//创建两个网格模型mesh1、mesh2
+var geometry = new THREE.BoxGeometry(20, 20, 20);
+var material = new THREE.MeshLambertMaterial({color: 0x0000ff});
+var group = new THREE.Group();
+var mesh1 = new THREE.Mesh(geometry, material);
+var mesh2 = new THREE.Mesh(geometry, material);
+mesh2.translateX(25);
+//把mesh1型插入到组group中，mesh1作为group的子对象
+group.add(mesh1);
+//把mesh2型插入到组group中，mesh2作为group的子对象
+group.add(mesh2);
+//把group插入到场景中作为场景子对象
+scene.add(group);
+```
+
+网格模型mesh1、mesh2作为设置为父对象group的子对象，如果父对象group进行旋转、缩放、平移变换，子对象同样跟着变换，就像你的头旋转了，眼睛会跟着头旋转。
+
+```js
+//沿着Y轴平移mesh1和mesh2的父对象，mesh1和mesh2跟着平移
+group.translateY(100);
+
+//父对象缩放，子对象跟着缩放
+group.scale.set(4,4,4);
+
+//父对象旋转，子对象跟着旋转
+group.rotateY(Math.PI/6)
+```
+
+1. 查看子对象.children  
+Threejs场景对象Scene、组对象Group都有一个子对象属性.children,通过该属性可以访问父对象的子对象，子对象属性.children的值是数组，所有子对象是数组的值
+
+2. 场景对象结构:scene.children  
+
+3. .add()方法  
+
+父对象执行.add()方法的本质就是把参数中的子对象添加到自身的子对象属性.children中。  
+
+.add()方法可以单独插入一个对象，也可以同时插入多个子对象。  
+
+```js
+group.add(mesh1);
+group.add(mesh2);
+
+group.add(mesh1,mesh2);
+```
+
+4. .remove()方法  
+
+删除父对象中的一个子对象。 一个对象的全部子对象可以通过该对象的.children()属性访问获得，执行该对象的删除方法.remove()改变的都是父对象的.children()属性  
+
+```js
+// 一次删除场景中多个对象
+scene.remove(light,group)
+```
+
+#### 2.6.2. 层级模型节点命名、查找、遍历
+
+1. 模型命名(.name属性)  
+
+在层级模型中可以给一些模型对象通过.name属性命名进行标记。
+
+```js
+group.add(Mesh)
+// 网格模型命名
+Mesh.name = "眼睛"
+// mesh父对象对象命名
+group.name = "头"
+```
+
+2. 递归遍历方法.traverse()
+
+Threejs层级模型就是一个树结构，可以通过递归遍历的算法去遍历Threejs一个模型对象的所有后代  
+
+```js
+scene.traverse(function(obj) {
+  if (obj.type === "Group") {
+    console.log(obj.name);
+  }
+  if (obj.type === "Mesh") {
+    console.log('  ' + obj.name);
+    obj.material.color.set(0xffff00);
+  }
+  if (obj.name === "左眼" | obj.name === "右眼") {
+    obj.material.color.set(0x000000)
+  }
+  // 打印id属性
+  console.log(obj.id);
+  // 打印该对象的父对象
+  console.log(obj.parent);
+  // 打印该对象的子对象
+  console.log(obj.children);
+})
+```
+
+3. 查找某个具体的模型  
+
+.getObjectById()、.getObjectByName()等方法  
+
+```js
+// 遍历查找scene中复合条件的子对象，并返回id对应的对象
+var idNode = scene.getObjectById ( 4 );
+console.log(idNode);
+// 遍历查找对象的子对象，返回name对应的对象（name是可以重名的，返回第一个）
+var nameNode = scene.getObjectByName ( "左腿" );
+nameNode.material.color.set(0xff0000);
+```
+
+#### 2.6.3. 坐标
+
+可以直接访问模型的位置属性.position获得模型在本地坐标系或者说模型坐标系下的三维坐标，通过模型的.getWorldPosition()方法获得该模型在世界坐标下的三维坐标。  
+
+1. .getWorldPosition()方法  
+
+```js
+// 声明一个三维向量用来保存世界坐标
+var worldPosition = new THREE.Vector3();
+// 执行getWorldPosition方法把模型的世界坐标保存到参数worldPosition中
+mesh.getWorldPosition(worldPosition);
+```
+
+2. 世界坐标系  
+
+网格模型mesh通过位置属性.position返回的坐标x分量是50，通过.getWorldPosition()返回的坐标x分量是100，也就是说mesh的是世界坐标是mesh位置属性.position和mesh父对象group位置属性.position的累加。  
+
+```js
+var mesh = new THREE.Mesh(geometry, material);
+// mesh的本地坐标设置为(50, 0, 0)
+mesh.position.set(50, 0, 0);
+var group = new THREE.Group();
+// group本地坐标设置和mesh一样设置为(50, 0, 0)
+// mesh父对象设置position会影响得到mesh的世界坐标
+group.position.set(50, 0, 0);
+group.add(mesh);
+scene.add(group);
+
+// .position属性获得本地坐标
+console.log('本地坐标',mesh.position);
+
+// getWorldPosition()方法获得世界坐标
+//该语句默认在threejs渲染的过程中执行,如果渲染之前想获得世界矩阵属性、世界位置属性等属性，需要通过代码更新
+scene.updateMatrixWorld(true);
+var worldPosition = new THREE.Vector3();
+mesh.getWorldPosition(worldPosition);
+console.log('世界坐标',worldPosition);
+```
+
+本地矩阵.materix是以本地坐标系为参考的模型矩阵，世界矩阵.matrixWorld自然就是以是世界坐标系为参照的模型矩阵.  
+
+本地矩阵.materix是以线性代数矩阵的形式表示.position、.scale和.rotation。世界矩阵.matrixWorld自然是用矩阵的形式表示模型以及模型父对象的所有旋转缩放平移变换。  
+
+### 2.7. 几何体对象、曲线、三维模型
+
+#### 2.7.1. 几何体
+
+所有几何体的基类分为Geometry和BufferGeometry两大类，两类几何体直接可以相互转化。  
+
+![Geometry](images/threejs9.png)
+
+1. 曲线  
+
+曲线和几何体同样本质上都是用来生成顶点的算法，曲线主要是按照一定的规则生成一系列沿着某条轨迹线分布的顶点。
+
+![curve](images/threejs10.png)
+
+圆弧线ArcCurve
+
+```js
+ArcCurve( aX, aY, aRadius, aStartAngle, aEndAngle, aClockwise )
+
+//参数：0, 0圆弧坐标原点x，y  100：圆弧半径    0, 2 * Math.PI：圆弧起始角度
+var arc = new THREE.ArcCurve(0, 0, 100, 0, 2 * Math.PI);
+```
+
+| 参数 | 含义 |
+| aX, aY | 圆弧圆心坐标 |
+| aRadius | 圆弧半径 |
+| aStartAngle, aEndAngle | 起始角度 |
+| aClockwis | 是否顺时针绘制，默认值为false |
+
+曲线Curve方法.getPoints()  
+
+.getPoints()是基类Curve的方法，圆弧线ArcCurve的基类是椭圆弧线EllipseCurve,椭圆弧线的基类是曲线Curve，所以圆弧线具有Curve的方法.getPoints()。  
+
+通过方法.getPoints()可以从圆弧线按照一定的细分精度返回沿着圆弧线分布的顶点坐标。细分数越高返回的顶点数量越多，自然轮廓越接近于圆形。方法.getPoints()的返回值是一个由二维向量Vector2或三维向量Vector3构成的数组，Vector2表示位于同一平面内的点，Vector3表示三维空间中一点。  
+
+```js
+var arc = new THREE.ArcCurve(0, 0, 100, 0, 2 * Math.PI);
+//getPoints是基类Curve的方法，返回一个vector2对象作为元素组成的数组
+var points = arc.getPoints(50);//分段数50，返回51个顶点
+```
+
+几何体方法.setFromPoints()  
+
+.setFromPoints()是几何体Geometry的方法，通过该方法可以把数组points中顶点数据提取出来赋值给几何体的顶点位置属性geometry.vertices，数组points的元素是二维向量Vector2或三维向量Vector3。  
+
+BufferGeometry和Geometry一样具有方法.setFromPoints()，不过区别是提取顶点数据后赋值给geometry.attributes.position属性。  
+
+```js
+// setFromPoints方法从points中提取数据改变几何体的顶点属性vertices
+geometry.setFromPoints(points);
+console.log(geometry.vertices);
+// 如果几何体是BufferGeometry，setFromPoints方法改变的是.attributes.position属性
+// console.log(geometry.attributes.position);
+```
+
+绘制一个圆弧轮廓。
+
+```js
+var geometry = new THREE.Geometry(); //声明一个几何体对象Geometry
+//参数：0, 0圆弧坐标原点x，y  100：圆弧半径    0, 2 * Math.PI：圆弧起始角度
+var arc = new THREE.ArcCurve(0, 0, 100, 0, 2 * Math.PI);
+//getPoints是基类Curve的方法，返回一个vector2对象作为元素组成的数组
+var points = arc.getPoints(50);//分段数50，返回51个顶点
+// setFromPoints方法从points中提取数据改变几何体的顶点属性vertices
+geometry.setFromPoints(points);
+//材质对象
+var material = new THREE.LineBasicMaterial({
+  color: 0x000000
+});
+//线条模型对象
+var line = new THREE.Line(geometry, material);
+scene.add(line); //线条对象添加到场景中
+
+```
+
