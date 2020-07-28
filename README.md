@@ -1808,7 +1808,7 @@ console.log('世界坐标',worldPosition);
 
 ![Geometry](images/threejs9.png)
 
-1. 曲线  
+#### 2.7.2.  曲线  
 
 曲线和几何体同样本质上都是用来生成顶点的算法，曲线主要是按照一定的规则生成一系列沿着某条轨迹线分布的顶点。
 
@@ -1855,23 +1855,237 @@ console.log(geometry.vertices);
 // console.log(geometry.attributes.position);
 ```
 
-绘制一个圆弧轮廓。
+使用threejs的API圆弧线ArcCurve绘制一个圆弧轮廓
 
 ```js
-var geometry = new THREE.Geometry(); //声明一个几何体对象Geometry
 //参数：0, 0圆弧坐标原点x，y  100：圆弧半径    0, 2 * Math.PI：圆弧起始角度
 var arc = new THREE.ArcCurve(0, 0, 100, 0, 2 * Math.PI);
 //getPoints是基类Curve的方法，返回一个vector2对象作为元素组成的数组
 var points = arc.getPoints(50);//分段数50，返回51个顶点
 // setFromPoints方法从points中提取数据改变几何体的顶点属性vertices
 geometry.setFromPoints(points);
-//材质对象
-var material = new THREE.LineBasicMaterial({
-  color: 0x000000
-});
-//线条模型对象
-var line = new THREE.Line(geometry, material);
-scene.add(line); //线条对象添加到场景中
-
 ```
+
+通过三角函数计算生成圆弧线上的顶点, 曲线API本质上就是通过某种算法得到了沿着特定轨迹的顶点数据。
+
+```js
+var R = 100; //圆弧半径
+var N = 50; //分段数量
+// 批量生成圆弧上的顶点数据
+for (var i = 0; i < N; i++) {
+  var angle = 2 * Math.PI / N * i;
+  var x = R * Math.sin(angle);
+  var y = R * Math.cos(angle);
+  geometry.vertices.push(new THREE.Vector3(x, y, 0));
+}
+// 插入最后一个点，line渲染模式下，产生闭合效果
+geometry.vertices.push(geometry.vertices[0])
+```
+
+#### 2.7.3. 样条曲线、贝赛尔曲线
+
+样条曲线CatmullRomCurve3  
+
+在三维空间中设置5个顶点，输入三维样条曲线CatmullRomCurve3作为参数，然后返回更多个顶点，通过返回的顶点数据，构建一个几何体，通过Line可以绘制出来一条沿着5个顶点的光滑样条曲线。  
+
+```js
+// 三维样条曲线  Catmull-Rom算法
+var curve = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-50, 20, 90),
+  new THREE.Vector3(-10, 40, 40),
+  new THREE.Vector3(0, 0, 0),
+  new THREE.Vector3(60, -60, 0),
+  new THREE.Vector3(70, 0, 80)
+]);
+//getPoints是基类Curve的方法，返回一个vector3对象作为元素组成的数组
+var points = curve.getPoints(100); //分段数100，返回101个顶点
+// setFromPoints方法从points中提取数据改变几何体的顶点属性vertices
+geometry.setFromPoints(points);
+```
+
+贝塞尔曲线  QuadraticBezierCurve3  
+
+贝塞尔曲线和样条曲线不同，多了一个控制点概念。二次贝赛尔曲线的参数p1、p3是起始点，p2是控制点，控制点不在贝塞尔曲线上。  
+
+```js
+var p1 = new THREE.Vector3(-80, 0, 0);
+var p2 = new THREE.Vector3(20, 100, 0);
+var p3 = new THREE.Vector3(80, 0, 0);
+// 三维二次贝赛尔曲线
+var curve = new THREE.QuadraticBezierCurve3(p1, p2, p3)
+
+// 二次贝赛尔曲线的参数p1、p4是起始点，p2、p3是控制点，控制点不在贝塞尔曲线上。
+var p1 = new THREE.Vector3(-80, 0, 0);
+var p2 = new THREE.Vector3(-40, 100, 0);
+var p3 = new THREE.Vector3(40, 100, 0);
+var p4 = new THREE.Vector3(80, 0, 0);
+// 三维三次贝赛尔曲线
+var curve = new THREE.CubicBezierCurve3(p1, p2, p3, p4);
+```
+
+#### 2.7.4. 多个线条组合曲线CurvePath
+
+通过组合曲线CurvePath可以把多个圆弧线、样条曲线、直线等多个曲线合并成一个曲线。
+
+```js
+// 绘制一个U型轮廓
+var R = 80; //圆弧半径
+var arc = new THREE.ArcCurve(0, 0, R, 0, Math.PI, true);
+// 半圆弧的一个端点作为直线的一个端点
+var line1 = new THREE.LineCurve(new THREE.Vector2(R, 200, 0), new THREE.Vector2(R, 0, 0));
+var line2 = new THREE.LineCurve(new THREE.Vector2(-R, 0, 0), new THREE.Vector2(-R, 200, 0));
+// 创建组合曲线对象CurvePath
+var CurvePath = new THREE.CurvePath();
+// 把多个线条插入到CurvePath中
+CurvePath.curves.push(line1, arc, line2);
+//分段数200
+var points = CurvePath.getPoints(200);
+// setFromPoints方法从points中提取数据改变几何体的顶点属性vertices
+geometry.setFromPoints(points);
+```
+
+#### 2.7.5. 曲线路径管道成型TubeGeometry
+
+TubeGeometry的功能就是通过一条曲线生成一个圆管。它的本质就是以曲线上顶点为基准，生成一系列曲线等径分布的顶点数据  
+
+构造函数格式：TubeGeometry(path, tubularSegments, radius, radiusSegments, closed)  
+
+| 参数 | 值 |
+| path | 扫描路径，基本类是Curve的路径构造函数 |
+| tubularSegments | 路径方向细分数，默认64 |
+| radius | 管道半径，默认1 |
+| radiusSegments | 管道圆弧细分数，默认8 |
+| closed | Boolean值，管道是否闭合 |
+
+```js
+//创建管道成型的路径(3D样条曲线)
+var path = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-10, -50, -50),
+  new THREE.Vector3(10, 0, 0),
+  new THREE.Vector3(8, 50, 50),
+  new THREE.Vector3(-5, 0, 100)
+]);
+// path:路径   40：沿着轨迹细分数  2：管道半径   25：管道截面圆细分数
+var geometry = new THREE.TubeGeometry(path, 40, 2, 25);
+```
+
+CurvePath多段路径生成管道案例  
+通过下面代码创建了一段样条曲线和两条直线拼接成的路径，然后通过曲线路径CurvePath把样条曲线和料条曲线合并成为一条路径。  
+
+```js
+// 创建多段线条的顶点数据
+var p1 = new THREE.Vector3(-85.35, -35.36)
+var p2 = new THREE.Vector3(-50, 0, 0);
+var p3 = new THREE.Vector3(0, 50, 0);
+var p4 = new THREE.Vector3(50, 0, 0);
+var p5 = new THREE.Vector3(85.35, -35.36);
+// 创建线条一：直线
+let line1 = new THREE.LineCurve3(p1, p2);
+// 重建线条2：三维样条曲线
+var curve = new THREE.CatmullRomCurve3([p2, p3, p4]);
+// 创建线条3：直线
+let line2 = new THREE.LineCurve3(p4, p5);
+var CurvePath = new THREE.CurvePath(); // 创建CurvePath对象
+CurvePath.curves.push(line1, curve, line2); // 插入多段线条
+//通过多段曲线路径创建生成管道，CCurvePath：管道路径
+var geometry2 = new THREE.TubeGeometry(CurvePath, 100, 5, 25, false);
+```
+
+#### 2.7.6. 旋转造型LatheGeometry
+
+构造函数LatheGeometry()， LatheGeometry可以利用已有的二维数据生成三维顶点数据，二维数据可以通过二维向量对象Vector2定义，也可以通过3D曲线或2D线条轮廓生成。 LatheGeometry的二维坐标数据默认绕y轴旋转。  
+
+格式：LatheGeometry(points, segments, phiStart, phiLength)  
+
+| 参数 | 值 |
+| points | Vector2表示的坐标数据组成的数组 |
+| segments | 圆周方向细分数，默认12 |
+| phiStart | 开始角度,默认0 |
+| phiLength | 旋转角度，默认2π |
+
+```js
+var points = [
+  new THREE.Vector2(50, 60),
+  new THREE.Vector2(25, 0),
+  new THREE.Vector2(50, -60)
+];
+var geometry = new THREE.LatheGeometry(points, 30);
+var material = new THREE.MeshPhongMaterial({
+  color: 0x0000ff, //三角面颜色
+  side: THREE.DoubleSide //两面可见
+}); //材质对象
+material.wireframe = true; //线条模式渲染(查看细分数)
+var mesh = new THREE.Mesh(geometry, material); //旋转网格模型对象
+scene.add(mesh); //旋转网格模型添加到场景中
+```
+
+样条曲线插值计算  
+
+借助Shape对象的方法.splineThru()，把上面的三个顶点进行样条插值计算， 可以得到一个光滑的旋转曲面。  
+
+shape.getPoints(20)的作用是利用已有的顶点插值计算出新的顶点，两个顶点之间插值计算出20个顶点，如果细分数是1不是20，相当于不进行插值计算， 插值计算的规则通过Shape对象的方法.splineThru()定义，几何曲线的角度描述，splineThru的作用就是创建一个样条曲线，除了样条曲线还可以使用贝赛尔等曲线进行插值计算。
+
+```js
+var shape = new THREE.Shape();//创建Shape对象
+var points = [//定位定点
+    new THREE.Vector2(50,60),
+    new THREE.Vector2(25,0),
+    new THREE.Vector2(50,-60)
+];
+shape.splineThru(points);//顶点带入样条插值计算函数
+var splinePoints = shape.getPoints(20);//插值计算细分数20
+var geometry = new THREE.LatheGeometry(splinePoints,30);//旋转造型
+```
+
+#### 2.7.7. Shape对象和轮廓填充ShapeGeometry
+
+1. 填充顶点构成的轮廓  
+
+通过下面代码定义了6个顶点坐标，也可以说是5个，最后一个和第一个是重合的，构成一个五边形区域。然后使用这一组二维顶点坐标作为Shape的参数构成一个五边形轮廓。把五边形轮廓Shape作为ShapeGeometry的参数，可以根据轮廓坐标计算出一系列三角形面填充轮廓，形成一个平面几何体。  
+
+```js
+var points = [
+  new THREE.Vector2(-50, -50),
+  new THREE.Vector2(-60, 0),
+  new THREE.Vector2(0, 50),
+  new THREE.Vector2(60, 0),
+  new THREE.Vector2(50, -50),
+  new THREE.Vector2(-50, -50),
+]
+// 通过顶点定义轮廓
+var shape = new THREE.Shape(points);
+// shape可以理解为一个需要填充轮廓
+// 所谓填充：ShapeGeometry算法利用顶点计算出三角面face3数据填充轮廓
+var geometry = new THREE.ShapeGeometry(shape, 25);
+```
+
+```js
+// 一个外轮廓圆弧嵌套三个内圆弧轮廓
+var shape = new THREE.Shape(); //Shape对象
+//外轮廓
+shape.arc(0, 0, 100, 0, 2 * Math.PI);
+// 内轮廓1
+var path1 = new THREE.Path();
+path1.arc(0, 0, 40, 0, 2 * Math.PI);
+// 内轮廓2
+var path2 = new THREE.Path();
+path2.arc(80, 0, 10, 0, 2 * Math.PI);
+// 内轮廓3
+var path3 = new THREE.Path();
+path3.arc(-80, 0, 10, 0, 2 * Math.PI);
+//三个内轮廓分别插入到holes属性中
+shape.holes.push(path1, path2, path3);
+```
+
+### 2.8. 纹理贴图
+
+#### 2.8.1. 创建纹理贴图
+
+通过纹理贴图加载器TextureLoader的load()方法加载一张图片可以返回一个纹理对象Texture，纹理对象Texture可以作为模型材质颜色贴图.map属性的值。  
+
+材质的颜色贴图属性.map设置后，模型会从纹理贴图上采集像素值，这时候一般来说不需要在设置材质颜色.color。.map贴图之所以称之为颜色贴图就是因为网格模型会获得颜色贴图的颜色值RGB。  
+
+
+
+
 
