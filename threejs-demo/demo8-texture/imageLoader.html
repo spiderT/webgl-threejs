@@ -22,26 +22,23 @@
     // 纹理贴图映射到一个矩形平面上
 
     // var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
-    var geometry = new THREE.CylinderGeometry(60, 60, 25,25); //圆柱
-    //
-    // 材质对象1
-    var material_1 = new THREE.MeshPhongMaterial({
-      color: 0xff0000
-    })
-    var textureLoader = new THREE.TextureLoader(); // 纹理加载器
-    var texture = textureLoader.load('./11.jpg'); // 加载图片，返回Texture对象
-    // 材质对象2
-    var material_2 = new THREE.MeshLambertMaterial({
-      map: texture, // 设置纹理贴图
-      // wireframe:true,
+    var geometry = new THREE.CylinderGeometry(60, 60, 25, 25); //圆柱
+
+
+    // 图片加载器
+    var ImageLoader = new THREE.ImageLoader();
+    // load方法回调函数，按照路径加载图片，返回一个html的元素img对象
+    ImageLoader.load('./11.jpg', function (img) {
+      // image对象作为参数，创建一个纹理对象Texture
+      var texture = new THREE.Texture(img);
+      // 下次使用纹理时触发更新
+      texture.needsUpdate = true;
+      var material = new THREE.MeshLambertMaterial({
+        map: texture, //设置纹理贴图
+      });
+      var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+      scene.add(mesh); //网格模型添加到场景中
     });
-    // 设置材质数组
-    var materialArr = [material_2, material_1, material_1, material_1, material_1, material_1];
-
-    // 设置数组材质对象作为网格模型材质参数
-    var mesh = new THREE.Mesh(geometry, materialArr); //网格模型对象Mesh
-    scene.add(mesh); //网格模型添加到场景中
-
 
 
     // 光源设置

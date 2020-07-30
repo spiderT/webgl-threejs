@@ -2085,7 +2085,137 @@ shape.holes.push(path1, path2, path3);
 
 材质的颜色贴图属性.map设置后，模型会从纹理贴图上采集像素值，这时候一般来说不需要在设置材质颜色.color。.map贴图之所以称之为颜色贴图就是因为网格模型会获得颜色贴图的颜色值RGB。  
 
+```js
+// 纹理贴图映射到一个矩形平面上
+var geometry = new THREE.PlaneGeometry(204, 102); //矩形平面
+// TextureLoader创建一个纹理加载器对象，可以加载图片作为几何体纹理
+var textureLoader = new THREE.TextureLoader();
+// 执行load方法，加载纹理贴图成功后，返回一个纹理对象Texture
+textureLoader.load('Earth.png', function(texture) {
+  var material = new THREE.MeshLambertMaterial({
+    // color: 0x0000ff,
+    // 设置颜色纹理贴图：Texture对象作为材质map属性的属性值
+    map: texture,//设置颜色贴图属性值
+  }); //材质对象Material
+  var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+  scene.add(mesh); //网格模型添加到场景中
+
+  //纹理贴图加载成功后，调用渲染函数执行渲染操作
+  render();
+})
+```
+
+> **纹理对象Texture**  
+
+通过图片加载器ImageLoader可以加载一张图片，所谓纹理对象Texture简单地说就是，纹理对象Texture的.image属性值是一张图片。  
+
+#### 2.8.2. 几何体顶点纹理坐标UV
+
+##### 两组UV坐标
+
+几何体有两组UV坐标，第一组组用于.map、.normalMap、.specularMap等贴图的映射，第二组用于阴影贴图.lightMap的映射.
+
+##### 修改纹理坐标
+
+几何体表面所有位置全部对应贴图(0.4,0.4)坐标位置的像素值，这样话网格模型不会显示完整的地图，而是显示采样点纹理坐标(0.4,0.4)对应的RGB值。
+
+```js
+//矩形平面，细分数默认1，即2个三角形拼接成一个矩形
+var geometry = new THREE.PlaneGeometry(204, 102);
+...
+/**
+ * 遍历uv坐标
+ */
+geometry.faceVertexUvs[0].forEach(elem => {
+  elem.forEach(Vector2 => {
+    // 所有的UV坐标全部设置为一个值
+    Vector2.set(0.4,0.4);
+  });
+});
+```
+
+原来几何体平面默认是两个三角形构成，把细分数设置为4，三角形数量变为16个。
+
+```js
+// 矩形平面 设置细分数4,4
+var geometry = new THREE.PlaneGeometry(204, 102, 4, 4);
+...
+/**
+ * 局部三角面显示完整纹理贴图
+ */
+var t0 = new THREE.Vector2(0, 1); //图片左下角
+var t1 = new THREE.Vector2(0, 0); //图片右下角
+var t2 = new THREE.Vector2(1, 0); //图片右上角
+var t3 = new THREE.Vector2(1, 1); //图片左上角
+var uv1 = [t0, t1, t3]; //选中图片一个三角区域像素——用于映射到一个三角面
+var uv2 = [t1, t2, t3]; //选中图片一个三角区域像素——用于映射到一个三角面
+// 设置第五、第六个三角形面对应的纹理坐标
+geometry.faceVertexUvs[0][4] = uv1
+geometry.faceVertexUvs[0][5] = uv2
+```
+
+#### 2.8.3. 数组材质、材质索引.materialIndex
+
+> 数组材质  
+
+所谓数组材质就是多个材质对象构成一个数组作为模型对象的材质。
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //立方体
+// var geometry = new THREE.PlaneGeometry(204, 102, 4, 4); //矩形平面
+// var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
+// var geometry = new THREE.CylinderGeometry(60, 60, 25,25); //圆柱
+//
+// 材质对象1
+var material_1 = new THREE.MeshPhongMaterial({
+  color: 0xffff3f
+})
+var textureLoader = new THREE.TextureLoader(); // 纹理加载器
+var texture = textureLoader.load('Earth.png'); // 加载图片，返回Texture对象
+// 材质对象2
+var material_2 = new THREE.MeshLambertMaterial({
+  map: texture, // 设置纹理贴图
+  // wireframe:true,
+});
+// 设置材质数组
+var materialArr = [material_2, material_1, material_1, material_1, material_1, material_1];
+
+// 设置数组材质对象作为网格模型材质参数
+var mesh = new THREE.Mesh(geometry, materialArr); //网格模型对象Mesh
+scene.add(mesh); //网格模型添加到场景中
+```
+
+#### 2.8.4. 纹理对象Texture阵列、偏移、旋转
 
 
 
+#### 2.8.5. 数据纹理对象DataTexture
 
+像素值包含RGB三个分量的图片格式有.jpg、.BMP等格式，通过WebGL原生API加载解析这些类型格式的图片需要设置gl.RGB，对于Threejs而言对WebGL进行封装了，gl.RGB对应的设置是THREE.RGBFormat  
+
+```js
+var geometry = new THREE.PlaneGeometry(128, 128); //矩形平面
+/**
+ * 创建纹理对象的像素数据
+ */
+var width = 32; //纹理宽度
+var height = 32; //纹理高度
+var size = width * height; //像素大小
+var data = new Uint8Array(size * 3); //size*3：像素在缓冲区占用空间
+for (let i = 0; i < size * 3; i += 3) {
+  // 随机设置RGB分量的值
+  data[i] = 255 * Math.random()
+  data[i + 1] = 255 * Math.random()
+  data[i + 2] = 255 * Math.random()
+}
+// 创建数据文理对象   RGB格式：THREE.RGBFormat
+var texture = new THREE.DataTexture(data, width, height, THREE.RGBFormat);
+texture.needsUpdate = true; //纹理更新
+//打印纹理对象的image属性
+// console.log(texture.image);
+
+var material = new THREE.MeshPhongMaterial({
+  map: texture, // 设置纹理贴图
+}); //材质对象Material
+var mesh = new THREE.Mesh(geometry, material);
+```

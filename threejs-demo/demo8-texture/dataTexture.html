@@ -20,28 +20,34 @@
     const scene = new THREE.Scene();
 
     // 纹理贴图映射到一个矩形平面上
+    var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
 
-    // var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
-    var geometry = new THREE.CylinderGeometry(60, 60, 25,25); //圆柱
-    //
-    // 材质对象1
-    var material_1 = new THREE.MeshPhongMaterial({
-      color: 0xff0000
-    })
-    var textureLoader = new THREE.TextureLoader(); // 纹理加载器
-    var texture = textureLoader.load('./11.jpg'); // 加载图片，返回Texture对象
-    // 材质对象2
-    var material_2 = new THREE.MeshLambertMaterial({
+
+    /**
+     * 创建纹理对象的像素数据
+     */
+    var width1 = 32; //纹理宽度
+    var height1 = 32; //纹理高度
+    var size = width1 * height1; //像素大小
+    var data = new Uint8Array(size * 3); //size*3：像素在缓冲区占用空间
+    for (let i = 0; i < size * 3; i += 3) {
+      // 随机设置RGB分量的值
+      data[i] = 255 * Math.random()
+      data[i + 1] = 255 * Math.random()
+      data[i + 2] = 255 * Math.random()
+    }
+    // 创建数据文理对象   RGB格式：THREE.RGBFormat
+    var texture = new THREE.DataTexture(data, width1, height1, THREE.RGBFormat);
+    texture.needsUpdate = true; //纹理更新
+    //打印纹理对象的image属性
+    // console.log(texture.image);
+
+    var material = new THREE.MeshPhongMaterial({
       map: texture, // 设置纹理贴图
-      // wireframe:true,
-    });
-    // 设置材质数组
-    var materialArr = [material_2, material_1, material_1, material_1, material_1, material_1];
+    }); //材质对象Material
+    var mesh = new THREE.Mesh(geometry, material);
 
-    // 设置数组材质对象作为网格模型材质参数
-    var mesh = new THREE.Mesh(geometry, materialArr); //网格模型对象Mesh
-    scene.add(mesh); //网格模型添加到场景中
-
+    scene.add(mesh);
 
 
     // 光源设置
