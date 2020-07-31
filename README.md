@@ -2187,7 +2187,30 @@ scene.add(mesh); //网格模型添加到场景中
 
 #### 2.8.4. 纹理对象Texture阵列、偏移、旋转
 
+1. 阵列  
 
+纹理贴图阵列映射。
+
+```js
+var texture = textureLoader.load('p1.png');
+// 设置阵列模式   默认ClampToEdgeWrapping  RepeatWrapping：阵列  镜像阵列：MirroredRepeatWrapping
+texture.wrapS = THREE.RepeatWrapping;
+texture.wrapT = THREE.RepeatWrapping;
+// uv两个方向纹理重复数量
+texture.repeat.set(4, 2);
+```
+
+2. 偏移
+
+```js
+texture.offset = new THREE.Vector2(0.3, 0.1)
+```
+
+3. 纹理旋转
+
+```js
+texture.rotation = Math.PI/4;
+```
 
 #### 2.8.5. 数据纹理对象DataTexture
 
@@ -2219,3 +2242,104 @@ var material = new THREE.MeshPhongMaterial({
 }); //材质对象Material
 var mesh = new THREE.Mesh(geometry, material);
 ```
+
+#### 2.8.6. 凹凸贴图bumpMap和法线贴图.normalMap,光照贴图添加阴影(·lightMap),高光贴图(.specularMap),环境贴图(.envMap)
+
+法线贴图  
+
+```js
+// TextureLoader创建一个纹理加载器对象，可以加载图片作为几何体纹理
+var textureLoader = new THREE.TextureLoader();
+// 加载法线贴图
+var textureNormal = textureLoader.load('./xx.jpg');
+var material = new THREE.MeshPhongMaterial({
+  color: 0xff0000,
+  normalMap: textureNormal, //法线贴图
+  //设置深浅程度，默认值(1,1)。
+  normalScale: new THREE.Vector2(3, 3),
+}); //材质对象Material
+var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+```
+
+凹凸贴图  
+
+```js
+var textureLoader = new THREE.TextureLoader();
+// 加载颜色纹理贴图
+var texture = textureLoader.load('./xx.jpg');
+// 加载凹凸贴图
+var textureBump = textureLoader.load('./xx.jpg');
+var material = new THREE.MeshPhongMaterial({
+  map: texture,// 普通纹理贴图
+  bumpMap:textureBump,//凹凸贴图
+  bumpScale:3,//设置凹凸高度，默认值1。
+}); //材质对象Material
+```
+
+光照贴图添加阴影  
+
+一般Threejs加载外部模型的光照贴图·lightMap，三维模型加载器可以自动设置，不需要程序员通过代码去设置，更好理解光照贴图·lightMap，这里就通过Three.js代码设置场景模型的阴影贴图·lightMap。  
+
+```js
+//创建一个平面几何体作为投影面
+var planeGeometry = new THREE.PlaneGeometry(300, 200);
+
+planeGeometry.faceVertexUvs[1] = planeGeometry.faceVertexUvs[0];
+var textureLoader = new THREE.TextureLoader();
+// 加载光照贴图
+var textureLight = textureLoader.load('shadow.png');
+var planeMaterial = new THREE.MeshLambertMaterial({
+  color: 0x999999,
+  lightMap:textureLight,// 设置光照贴图
+  // lightMapIntensity:0.5,//烘培光照的强度. 默认 1.
+});
+var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial); //网格模型对象Mesh
+...
+```
+
+高光贴图(.specularMap)  
+
+高光网格材质MeshPhongMaterial具有高光属性.specular,如果一个网格模型Mesh都是相同的材质并且表面粗糙度相同,或者说网格模型外表面所有不同区域的镜面反射能力相同，可以直接设置材质的高光属性.specular。如果一个网格模型表示一个人，那么人的不同部位高光程度是不同的，不可能直接通过.specular属性来描述，在这种情况通过高光贴图.specularMap的RGB值来描述不同区域镜面反射的能力，.specularMap和颜色贴图.Map一样和通过UV坐标映射到模型表面。高光贴图.specularMap不同区域像素值不同，表示网格模型不同区域的高光值不同。  
+
+```js
+// 加载纹理贴图
+var texture = textureLoader.load('earth_diffuse.png');
+// 加载高光贴图
+var textureSpecular = textureLoader.load('earth_specular.png');
+var material = new THREE.MeshPhongMaterial({
+  // specular: 0xff0000,//高光部分的颜色
+  shininess: 30,//高光部分的亮度，默认30
+  map: texture,// 普通纹理贴图
+  specularMap: textureSpecular, //高光贴图
+}); //材质对象Material
+```
+
+环境贴图(.envMap)  
+加环境贴图的6张纹理贴图，可以通过CubeTextureLoader类趋势线。  
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100); //立方体
+
+var loader = new THREE.CubeTextureLoader();
+// 所有贴图在同一目录下，可以使用该方法设置共用路径
+loader.setPath('环境贴图/');
+// 立方体纹理加载器返回立方体纹理对象CubeTexture
+var CubeTexture = loader.load(['px.jpg', 'nx.jpg', 'py.jpg', 'ny.jpg', 'pz.jpg', 'nz.jpg']);
+//材质对象Material
+var material = new THREE.MeshPhongMaterial({
+  //网格模型设置颜色，网格模型颜色和环境贴图会进行融合计算
+  // color:0xff0000,
+  envMap: CubeTexture, //设置环境贴图
+  // 环境贴图反射率   控制环境贴图对被渲染三维模型影响程度
+  // reflectivity: 0.1,
+});
+console.log(CubeTexture.image);
+var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+scene.add(mesh); //网格模型添加到场景中
+```
+
+### 2.9. 相机对象
+
+#### 2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera 
+
+
