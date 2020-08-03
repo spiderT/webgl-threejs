@@ -800,7 +800,20 @@ renderer.setMeshData([{
 
 ## three.js
 
-Three.js是基于原生WebGL封装运行的三维引擎
+Three.js是基于原生WebGL封装运行的三维引擎  
+
+![three.js参与的流程](images/threejs-flow.png)
+
+黄色和绿色部分，都是three.js参与的部分，其中黄色是javascript部分，绿色是opengles部分。  
+
+- 辅助我们导出了模型数据；
+- 自动生成了各种矩阵；
+- 生成了顶点着色器；
+- 辅助我们生成材质，配置灯光；
+- 根据我们设置的材质生成了片元着色器。
+- 而且将webGL基于光栅化的2D API，封装成了我们人类能看懂的 3D API。
+
+![three.js完整运行流程](images/threejs-running-process.png)
 
 ### 1. 程序结构
 
