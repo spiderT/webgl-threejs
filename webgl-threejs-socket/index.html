@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>three.js webgl - skinning and morphing</title>
+  <meta charset="utf-8">
+  <style>
+    .info span {
+      cursor: pointer;
+      line-height: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="info">
+    <p>第一个人物</p>
+    <div class="stat">
+      <span id="Idle">Idle</span>
+      <span id="Walking">Walking</span>
+      <span id="Running">Running</span>
+      <span id="Dance">Dance</span>
+      <span id="Death">Death</span>
+      <span id="Sitting">Sitting</span>
+      <span id="Standing">Standing</span>
+    </div>
+    <div class="Emotes">
+      <span id="Jump">Jump</span>
+      <span id="Yes">Yes</span>
+      <span id="No">No</span>
+      <span id="Wave">Wave</span>
+      <span id="Punch">Punch</span>
+      <span id="ThumbsUp">ThumbsUp</span>
+    </div>
+  </div>
+
+  <div class="info">
+    <p>第二个人物</p>
+    <div class="stat">
+      <span id="Idle_2">Idle</span>
+      <span id="Walking_2">Walking</span>
+      <span id="Running_2">Running</span>
+    </div>
+  </div>
+
+  <script type="module">
+
+    import * as THREE from './three.module.js';
+
+    import { GLTFLoader } from './jsm/loaders/GLTFLoader.js';
+
+    let container, stats, clock, mixer, actions, activeAction, previousAction, camera, scene, renderer, model, face, skeleton,model2, mixer2;
+
+    let api = { state: 'Idle' };
+
+    init();
+    animate();
+
+    function init() {
+      container = document.createElement( 'div' );
+      document.body.appendChild( container );
+
+      camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
+      camera.position.set( - 5, 3, 10 );
+      camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color( 0xe0e0e0 );
+      scene.fog = new THREE.Fog( 0xe0e0e0, 20, 100 );
+
+      clock = new THREE.Clock();
+
+      // lights
+      let light = new THREE.HemisphereLight( 0xffffff, 0x444444 );
+      light.position.set( 0, 20, 0 );
+      scene.add( light );
+
+      light = new THREE.DirectionalLight( 0xffffff );
+      light.position.set( 0, 20, 10 );
+      scene.add( light );
+
+      // ground
+      let mesh = new THREE.Mesh( new THREE.PlaneBufferGeometry( 2000, 2000 ), new THREE.MeshPhongMaterial( { color: 0x999999, depthWrite: false } ) );
+      mesh.rotation.x = - Math.PI / 2;
+      scene.add( mesh );
+
+      let grid = new THREE.GridHelper( 200, 40, 0x000000, 0x000000 );
+      grid.material.opacity = 0.2;
+      grid.material.transparent = true;
+      scene.add( grid );
+
+      // model
+      const loader = new GLTFLoader();
+      loader.load( 'gltf/RobotExpressive.glb', function ( gltf ) {
+
+        model = gltf.scene;
+        // 移动距离
+        model.position.set(0, 0, 5);
+        // 旋转，面对面
+        model.rotation.y = - Math.PI;
+        scene.add( model );
+
+        changeActionByRobot( model, gltf.animations );
+
+      });
+      
+      // 第二个模型
+      loader.load( 'gltf/Xbot.glb', function ( gltf ) {
+
+        model2 = gltf.scene;
+        scene.add( model2 );
+
+        skeleton = new THREE.SkeletonHelper( model2 );
+        skeleton.visible = false;
+        scene.add( skeleton );
+        changeActionByMan(gltf, model2);
+      });
+
+
+      renderer = new THREE.WebGLRenderer( { antialias: true } );
+      renderer.setPixelRatio( window.devicePixelRatio );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      container.appendChild( renderer.domElement );
+
+      window.addEventListener( 'resize', onWindowResize, false );
+
+    }
+
+    function changeActionByMan(gltf, model){
+      let animations = gltf.animations;
+      mixer2 = new THREE.AnimationMixer( model );
+
+      let walkingDom2 = document.getElementById('Walking_2');
+      let idlegDom2 = document.getElementById('Idle_2');
+      let runninggDom2 = document.getElementById('Running_2');
+
+      // animations元素: agree headShake idle run sad_pose sneak_pose walk
+      walkingDom2.onclick= function () {
+        activateManAction(mixer2.clipAction( animations[6] ))
+      }
+
+      idlegDom2.onclick= function () {
+        activateManAction(mixer2.clipAction( animations[2] ))
+      }
+
+      runninggDom2.onclick= function () {
+        activateManAction(mixer2.clipAction( animations[3] ))
+      }
+    }
+
+    function activateManAction( action ) {
+      action.play();
+    }
+    
+    function changeActionByRobot(model, animations){
+      let states = [ 'Idle', 'Walking', 'Running', 'Dance', 'Death', 'Sitting', 'Standing' ];
+      let emotes = [ 'Jump', 'Yes', 'No', 'Wave', 'Punch', 'ThumbsUp' ];
+
+      [...states, ...emotes].map(item=>{
+        document.getElementById(item).onclick = function () {
+          fadeToAction( item, 0.5 );
+        }
+      })
+
+      mixer = new THREE.AnimationMixer( model );
+
+      actions = {};
+
+      for ( let i = 0; i < animations.length; i ++ ) {
+        let clip = animations[ i ];
+        let action = mixer.clipAction( clip );
+        actions[ clip.name ] = action;
+        if ( emotes.indexOf( clip.name ) >= 0 || states.indexOf( clip.name ) >= 4 ) {
+          action.clampWhenFinished = true;
+          action.loop = THREE.LoopOnce;
+        }
+      }
+
+      // emotes
+      function createEmoteCallback( name ) {
+        api[ name ] = function () {
+          fadeToAction( name, 0.2 );
+          mixer.addEventListener( 'finished', restoreState );
+        };
+      }
+
+      function restoreState() {
+        mixer.removeEventListener( 'finished', restoreState );
+        fadeToAction( api.state, 0.2 );
+      }
+
+      for ( let i = 0; i < emotes.length; i ++ ) {
+        createEmoteCallback( emotes[ i ] );
+      }
+      
+      activeAction = actions[ 'Idle' ];
+      activeAction.play();
+    }
+
+    function fadeToAction( name, duration ) {
+      previousAction = activeAction;
+      activeAction = actions[ name ];
+      if ( previousAction !== activeAction ) {
+        previousAction.fadeOut( duration );
+      }
+
+      activeAction
+        .reset()
+        .setEffectiveTimeScale( 1 )
+        .setEffectiveWeight( 1 )
+        .fadeIn( duration )
+        .play();
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+
+    function animate() {
+      let dt = clock.getDelta();
+      if ( mixer ) mixer.update( dt );
+      if ( mixer2 ) mixer2.update( dt );
+      requestAnimationFrame( animate );
+      renderer.render( scene, camera );
+    }
+
+	</script>
+</body>
+</html>
