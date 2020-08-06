@@ -6,6 +6,17 @@
 [webgl教程](https://webglfundamentals.org/webgl/lessons/zh_cn/)  
 [Three.js教程](http://www.webgl3d.cn/Three.js/)  
 
+目录webgl-demo是学习webgl的章节demo  
+目录threejs-demo是学习threejs的章节demo  
+
+**目录threejs-playgame是学习threejs的一个综合性的electron的threejs-demo，类似游戏中的入门引导，用户聊天文字朗读，及相应动作**
+
+```text
+cd threejs-playgame
+npm i
+npm start
+```
+
 ## webgl
 
 ### 1. 工作原理
@@ -2355,4 +2366,43 @@ scene.add(mesh); //网格模型添加到场景中
 
 #### 2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera 
 
+### 2.10. 文字 TextGeometry
+
+文字形状(TextGeometry)可以用来创建三维的文字形状。  
+
+使用文字前，需要下载和引用额外的字体库。字体库在three.js Github master/examples/fonts目录下，下载里面的json文件，放在你的目录下，然后加载。  
+
+```js
+// 调用一个字体加载函数
+var loader = new THREE.FontLoader();
+loader.load('helvetiker_regular.typeface.json', function(font) {
+  var mesh = new THREE.Mesh(
+      new THREE.TextGeometry('Hello', {
+          font: font,
+          size: 1,
+          height: 1
+      }), 
+      new THREE.MeshBasicMaterial({
+          color: 0xffff00,
+          wireframe: true
+      })
+  );
+  scene.add(mesh);
+  // 写在loader函数里面 否则不显示
+  renderer.render(scene,camera);
+});
+```
+
+new THREE.TextGeometry(text, parameters)  
+其中，text是要显示的文字字符串，parameters是以下参数组成的对象：  
+
+size：字号大小，一般为大写字母的高度  
+height：文字的厚度  
+curveSegments：弧线分段数，使得文字的曲线更加光滑  
+font：字体，默认是'helvetiker'，需对应引用的字体文件  
+weight：值为'normal'或'bold'，表示是否加粗  
+style：值为'normal'或'italics'，表示是否斜体  
+bevelEnabled：布尔值，是否使用倒角，意为在边缘处斜切  
+bevelThickness：倒角厚度  
+bevelSize：倒角宽度  
 

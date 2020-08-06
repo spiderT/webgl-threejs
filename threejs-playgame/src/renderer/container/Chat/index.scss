@@ -1,0 +1,108 @@
+.chat-wrap {
+  position: fixed;
+  bottom: 60px;
+  left: 10px;
+  width: 300px;
+  height: 400px;
+  padding: 10px 100px 10px 10px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.3);
+
+  .avatar-container {
+    width: 60px;
+    height: 60px;
+    overflow: hidden;
+    position: absolute;
+    top: -30px;
+    right: 10px;
+    border: 5px solid #888;
+    border-radius: 5px;
+  }
+
+  .avatar {
+    width: 60px;
+    margin-top: -20px; 
+    height: auto;
+  }
+
+  .chat-container {
+    width: 180px;
+    padding: 10px 10px 4px;
+    background-color: #fff;
+  }
+
+  .msg-wrap {
+    height: 280px;
+    overflow-y: scroll;
+
+    .msg-title,
+    .msg-con {
+      font-size: 12px;
+    }
+    .msg-title{
+      font-weight: 500;
+    }
+  }
+
+  .edit {
+    width: 180px;
+    height: 70px;
+  }
+
+  .send-btn {
+    cursor: pointer;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: inline-block;
+    width: 60px;
+    height: 30px;
+    line-height: 30px;
+    text-align: center;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+}
+
+.float-btn {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+
+  .action-btn {
+    cursor: pointer;
+    margin-right: 10px;
+  }
+}
+
+.aciton-wrap {
+  position: fixed;
+  bottom: 60px;
+  left: 10px;
+  width: 200px;
+  height: 200px;
+  padding: 18px;
+  box-sizing: border-box;
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.2);
+  overflow-wrap: break-word;
+
+  span {
+    font-size: 12px;
+    margin: 4px;
+    cursor: pointer;
+    border: 1px solid rgb(219, 154, 52);
+    padding: 2px 3px;
+    border-radius: 2px;
+    display: inline-block;
+    background-color: rgba(219, 154, 52, 0.4);
+  }
+
+  .emotes {
+    span {
+      border: 1px solid rgb(78, 18, 95);
+      background-color: rgba(78, 18, 95, 0.3);
+    }
+  }
+}

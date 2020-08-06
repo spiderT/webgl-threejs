@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <title>three.js webgl - skinning and morphing</title>
+  <title>three.js webgl</title>
   <meta charset="utf-8">
   <style>
     .info span {
@@ -61,7 +61,8 @@
       document.body.appendChild( container );
 
       camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.25, 100 );
-      camera.position.set( - 5, 3, 10 );
+      // 可以通过调整position，看到不同的效果
+      camera.position.set( -10, 3, 10 );
       camera.lookAt( new THREE.Vector3( 0, 2, 0 ) );
 
       scene = new THREE.Scene();
@@ -108,11 +109,15 @@
       loader.load( 'gltf/Xbot.glb', function ( gltf ) {
 
         model2 = gltf.scene;
+
+        // 移动距离
+        model2.position.set(0, 0, -5);
+
         scene.add( model2 );
 
-        skeleton = new THREE.SkeletonHelper( model2 );
-        skeleton.visible = false;
-        scene.add( skeleton );
+        // skeleton = new THREE.SkeletonHelper( model2 );
+        // skeleton.visible = false;
+        // scene.add( skeleton );
         changeActionByMan(gltf, model2);
       });
 
