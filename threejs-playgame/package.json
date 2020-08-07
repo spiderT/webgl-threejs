@@ -65,7 +65,7 @@
   },
   "build": {
     "appId": "com.spider.chat",
-    "productName": "spiderchat",
+    "productName": "threejsGame",
     "files": [
       "build/**/*",
       "src",
@@ -85,14 +85,14 @@
         "URL types": [
           {
             "Document Role": "Viewer",
-            "URL identifier": "spiderchat",
+            "URL identifier": "threejsGame",
             "URL Schemes": [
-              "spiderchat"
+              "threejsGame"
             ]
           }
         ],
         "CFBundleURLSchemes": [
-          "spiderchat"
+          "threejsGame"
         ]
       }
     },

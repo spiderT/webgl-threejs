@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './index.scss';
 import { STATES, EMOTES, SYSTEM_WORDS } from '../../constants';
 import Bus from '../../../eventBus';
+
 const MY_NAME = '堂堂唐家大姐';
 let chatIndex = 0; // 聊天轮数
 
@@ -11,8 +12,17 @@ function Chat() {
   const [inputValue, setInputValue] = useState('');
   const [msgs, setMsgs] = useState([]);
 
+  useEffect(() => {
+    setTimeout(() => systemAction(chatIndex), 2000);
+  }, []);
+
+  function toggleShowStatus(isMsgShow, isActionShow) {
+    setMsgShow(false || isMsgShow);
+    setActionShow(false || isActionShow);
+  }
+
   function handleAction(item) {
-    Bus.emit('changeTeacherStatus', item);
+    Bus.emit('changeSystemStatus', item);
   }
 
   function handleInput(e) {
@@ -28,34 +38,44 @@ function Chat() {
       })
     );
 
-    let say = new window.SpeechSynthesisUtterance(inputValue);
-    window.speechSynthesis.speak(say);
+    speak(inputValue);
 
     actionRule(inputValue);
     setInputValue('');
-    Bus.emit('createStudentText', inputValue);
+    Bus.emit('createGuestText', inputValue);
 
     // 系统回复消息
     setTimeout(() => {
       chatIndex++;
-      const result = SYSTEM_WORDS[chatIndex];
-      Bus.emit('createTeacherText', result.msg);
-      // todo
-      // setMsgs(
-      //   msgs.concat({
-      //     name: 'Robot',
-      //     msg: result.msg,
-      //     id: new Date(),
-      //   })
-      // );
-      say = new window.SpeechSynthesisUtterance(result.msg);
-      window.speechSynthesis.speak(say);
-      result.action && Bus.emit('changeTeacherStatus', result.action);
+      systemAction(chatIndex);
     }, 1000);
   }
 
+  function speak(words) {
+    if (!words) {
+      return;
+    }
+    const say = new window.SpeechSynthesisUtterance(words);
+    window.speechSynthesis.speak(say);
+  }
+
+  function systemAction(chatIndex) {
+    const { msg = '', action = '' } = SYSTEM_WORDS[chatIndex];
+    Bus.emit('createSystemText', msg);
+    // todo
+    // setMsgs(
+    //   msgs.concat({
+    //     name: 'Robot',
+    //     msg: result.msg,
+    //     id: new Date(),
+    //   })
+    // );
+    speak(msg);
+    action && Bus.emit('changeSystemStatus', action);
+  }
+
   function actionRule(msg) {
-    msg && Bus.emit('changeStudentStatus', msg);
+    msg && Bus.emit('changeGuestStatus', msg);
   }
 
   return (
@@ -104,18 +124,12 @@ function Chat() {
       <div className="float-btn">
         <img
           className="action-btn"
-          onClick={() => {
-            setMsgShow(!isMsgShow);
-            setActionShow(false);
-          }}
+          onClick={() => toggleShowStatus(!isMsgShow, false)}
           src={require('../../../resources/images/liaotian.png')}
         />
         <img
           className="action-btn"
-          onClick={() => {
-            setActionShow(!isActionShow);
-            setMsgShow(false);
-          }}
+          onClick={() => toggleShowStatus(false, !isActionShow)}
           src={require('../../../resources/images/dongzuo.png')}
         />
       </div>

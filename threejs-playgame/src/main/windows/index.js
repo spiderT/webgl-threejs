@@ -1,4 +1,4 @@
-const { BrowserWindow, ipcMain, nativeTheme } = require('electron');
+const { BrowserWindow } = require('electron');
 const isDev = require('electron-is-dev');
 const path = require('path');
 
@@ -12,14 +12,14 @@ process.on('unhandledRejection', (reason, p) => {
 function createWindow() {
   // 创建浏览器窗口
   win = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 800,
     webPreferences: {
       nodeIntegration: true,
     },
     minWidth: 800,
     minHeight: 600,
-    // titleBarStyle: 'hiddenInset',
+    titleBarStyle: 'hiddenInset',
     show: false, // 先隐藏
     icon: path.join(__dirname, '../../resources/images/zhizhuxia.png'),
     backgroundColor: '#f3f3f3', // 优化白屏，设置窗口底色

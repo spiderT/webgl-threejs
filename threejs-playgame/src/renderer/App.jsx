@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 import User from './container/User/index.jsx';
 import Chat from './container/Chat/index.jsx';

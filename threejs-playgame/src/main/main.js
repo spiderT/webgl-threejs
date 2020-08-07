@@ -3,7 +3,6 @@ const setAppMenu = require('./menus');
 const setTray = require('./tray');
 const { show, close, createWindow } = require('./windows');
 const path = require('path');
-const handleIPC = require('./ipc');
 
 // 开机自启动
 app.setLoginItemSettings({
@@ -27,7 +26,6 @@ if (!gotTheLock) {
   app.on('ready', () => {
     createWindow();
     setTray();
-    handleIPC();
   });
 
   app.on('activate', show);

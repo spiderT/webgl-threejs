@@ -4,20 +4,20 @@ import {
 } from 'three/examples/jsm/loaders/GLTFLoader';
 const loader = new GLTFLoader();
 
-let textGeo, textMesh;
+let textMesh;
 
 /**
  * 创建光源
  * @param {*} scene 
  */
 function createLights(scene) {
-  let light = new THREE.HemisphereLight(0xffffff, 0x444444);
-  light.position.set(0, 20, 0);
-  scene.add(light);
+  const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
+  hemiLight.position.set(0, 20, 0);
+  scene.add(hemiLight);
 
-  light = new THREE.DirectionalLight(0xffffff);
-  light.position.set(0, 20, 10);
-  scene.add(light);
+  const dirLight = new THREE.DirectionalLight(0xffffff);
+  dirLight.position.set(3, 10, 10);
+  scene.add(dirLight);
 }
 
 /**
@@ -90,7 +90,7 @@ function createText(font, scene, text, xPosition, yPosition, zPosition) {
   if (textMesh) {
     scene.remove(textMesh)
   }
-  textGeo = new THREE.TextGeometry(text, {
+  const textGeo = new THREE.TextGeometry(text, {
     font,
     size: 0.5, // 字号大小，一般为大写字母的高度
     height: 0, // 文字的厚度
@@ -101,10 +101,7 @@ function createText(font, scene, text, xPosition, yPosition, zPosition) {
   });
 
   textMesh = new THREE.Mesh(textGeo, new THREE.MeshBasicMaterial({
-    specular: 0xffffff,
     color: 0x444444,
-    shininess: 100,
-    metal: true
   }))
   textMesh.position.x = xPosition;
   textMesh.position.y = yPosition;

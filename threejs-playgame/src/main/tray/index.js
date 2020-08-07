@@ -22,7 +22,7 @@ function setTray() {
     }
   ])
   tray.setContextMenu(contextMenu)
-  tray.setToolTip('spiderChat')
+  tray.setToolTip('threejsGame')
 }
 
 module.exports = setTray;

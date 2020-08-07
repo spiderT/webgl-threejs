@@ -2364,7 +2364,9 @@ scene.add(mesh); //网格模型添加到场景中
 
 ### 2.9. 相机对象
 
-#### 2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera 
+#### 2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera
+
+
 
 ### 2.10. 文字 TextGeometry
 
@@ -2405,4 +2407,86 @@ style：值为'normal'或'italics'，表示是否斜体
 bevelEnabled：布尔值，是否使用倒角，意为在边缘处斜切  
 bevelThickness：倒角厚度  
 bevelSize：倒角宽度  
+
+#### 生成字体json文件
+
+英文字体不支持中文展示，会渲染成？  
+
+可以下载中文字体，然后转换成json文件引入  
+
+- 首先下载思源ttf字体 http://www.diyiziti.com/download/220/  
+
+- 在转换字体的网页的网站，转换成json字体 https://gero3.github.io/facetype.js/  
+
+### 2.11. 帧动画模块
+
+Threejs提供了一系列用户编辑和播放关键帧动画的API,例如关键帧KeyframeTrack、剪辑AnimationClip、操作AnimationAction、混合器AnimationMixer。  
+
+
+
+
+### 2.12. 骨骼动画、变形动画
+
+### 2.13. 语音模块
+
+### 2.14. 模型文件加载
+
+### 2.15. 性能分析，及优化
+
+#### 2.15.1. 性能监视器Stats
+
+在Three.js中，性能由一个性能监视器来管理，在https://github.com/mrdoob/stats.js  
+
+![fps](images/fps.jpg)
+
+其中FPS表示：上一秒的帧数，这个值越大越好，一般都为60左右。点击上面的图，就会变成下面的另一个视图。
+
+![ms](images/ms.jpg)
+
+MS表示渲染一帧需要的毫秒数，这个数字是越小越好。再次点击又可以回到FPS视图中。
+
+```js
+const stats = new Stats();
+stats.setMode(1); // 0: fps, 1: ms
+// 将stats的界面对应左上角
+stats.dom.style.position = 'absolute';
+stats.dom.style.left = '0px';
+stats.dom.style.top = '0px';
+document.body.appendChild( stats.dom );
+setInterval( function () {
+stats.begin();
+// 你的每一帧的代码
+stats.end();
+}, 1000 / 60 );
+```
+
+1、setMode函数  
+
+参数为0的时候，表示显示的是FPS界面，参数为1的时候，表示显示的是MS界面。  
+
+2、stats的dom  
+
+stats的dom表示绘制的目的地（DOM），波形图就绘制在这上面。  
+
+3、stats的begin函数  
+
+begin，在你要测试的代码前面调用begin函数，在你代码执行完后调用end()函数，这样就能够统计出这段代码执行的平均帧数了。  
+
+#### 2.15.4. 性能关键点
+
+1、尽量使用clone方法；  
+
+2、不需要的时候一定要dispose；  
+
+3、优先使用BufferGeometry；  
+
+4、注意图片压缩；  
+
+5、重点优化requestAnimationFrame内的方法；  
+
+6、如果有大量外部模型，一定要结合使用gltf-pipeline与Draco。  
+
+
+
+
 

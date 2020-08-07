@@ -1,21 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './index.scss';
 import * as THREE from 'three';
-import { STATES, EMOTES } from '../../constants';
+import { STATES, EMOTES, MSG_ACTION_RULE } from '../../constants';
 import { createLights, createGround, onWindowResize, loadModel, removeModel, createText } from './utils';
 import Bus from '../../../eventBus';
-const fontLoader = new THREE.FontLoader();
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import Stats from 'three/examples/jsm/libs/stats.module';
 
+const fontLoader = new THREE.FontLoader();
+const clock = new THREE.Clock();
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 100);
 
 export default function User() {
-  let clock, mixer, actions, activeAction, previousAction, mixer2;
+  let mixer, actions, activeAction, previousAction, mixer2, font, guestAnimations, guestModel, stats;
   let api = { state: 'Idle' };
-  let studentAnimations;
-  let font;
-
   const canvasRef = useRef();
 
   useEffect(() => {
@@ -31,7 +31,14 @@ export default function User() {
     scene.background = new THREE.Color(0xe0e0e0);
     scene.fog = new THREE.Fog(0xe0e0e0, 20, 100);
 
-    clock = new THREE.Clock();
+
+    // stats
+    stats = new Stats();
+    stats.dom.style.position = 'absolute';
+    stats.dom.style.left = '140px';
+    stats.dom.style.bottom = '10px';
+    stats.dom.style.top = null;  // 解决bottom不生效
+    canvasRef.current.appendChild(stats.dom);
 
     // lights
     createLights(scene);
@@ -42,20 +49,22 @@ export default function User() {
     // 加载font
     fontLoader.load('/resources/fonts/helvetiker_regular.typeface.json', (response) => (font = response));
 
-    // 第一个模型
+    // 人物模型
     loadModel(
       scene,
       require('../../../resources/gltf/Xbot.glb'),
       (model) => {
+        guestModel = model
         // 移动距离
         model.position.set(0, 0, 5);
         // 旋转，面对面
         model.rotation.y = -Math.PI;
+
       },
-      (model, gltf) => changeActionByMan(model, gltf)
+      (model, gltf) => changeActionByGuest(model, gltf)
     );
 
-    // 第二个模型
+    // 机器人模型
     loadModel(
       scene,
       require('../../../resources/gltf/RobotExpressive.glb'),
@@ -63,7 +72,7 @@ export default function User() {
         // 移动距离
         model.position.set(0, 0, 0);
       },
-      (model, gltf) => changeActionByRobot(model, gltf.animations)
+      (model, gltf) => changeActionBySystem(model, gltf.animations)
     );
 
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -71,51 +80,53 @@ export default function User() {
     renderer.outputEncoding = THREE.sRGBEncoding;
     canvasRef.current.appendChild(renderer.domElement);
 
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.target.set(0, 1, 0);
+    controls.update();
+
     window.addEventListener('resize', () => onWindowResize(camera, renderer), false);
   }
 
-  function changeActionByMan(model, gltf) {
-    studentAnimations = gltf.animations;
+  function changeActionByGuest(model, gltf) {
+    guestAnimations = gltf.animations;
     mixer2 = new THREE.AnimationMixer(model);
   }
 
-  function activateManAction(action) {
-    action.play();
-  }
-
   // 监听变化
-  Bus.addListener('changeTeacherStatus', (msg) => {
+  Bus.addListener('changeSystemStatus', (msg) => {
     fadeToAction(msg, 0.5);
   });
 
-  Bus.addListener('createStudentText', (msg) => {
+  Bus.addListener('createGuestText', (msg) => {
     createText(font, scene, msg, 17, 0, -4);
   });
 
-  Bus.addListener('createTeacherText', (msg) => {
+  Bus.addListener('createSystemText', (msg) => {
     createText(font, scene, msg, 0, 5, -4);
   });
 
-  Bus.addListener('changeStudentStatus', (msg) => {
-    // studentAnimations元素: agree headShake idle run sad_pose sneak_pose walk
+  Bus.addListener('changeGuestStatus', (msg) => {
+    // Animations元素: agree headShake idle run sad_pose sneak_pose walk
     let number = 2;
-    if (msg === 'yes') {
+    const rule = MSG_ACTION_RULE[msg];
+    if (rule === 'yes') {
       number = 0;
-    } else if (msg === 'no') {
+    } else if (rule === 'no') {
       number = 1;
-    } else if (msg === 'walk') {
+    } else if (rule === 'walk') {
       number = 6;
-    } else if (msg === 'run') {
+    } else if (rule === 'run') {
       number = 3;
-    } else if (msg === 'bye') {
-      // todo 人物旋转离开，移除模型
-      // removeModel()
-      console.log('mixer2' ,mixer2)
+    } else if (rule === 'bye') {
+      // 移除模型
+      removeModel(scene, guestModel)
     }
-    activateManAction(mixer2.clipAction(studentAnimations[number]));
+    mixer2.clipAction(guestAnimations[number]).play();
   });
 
-  function changeActionByRobot(model, animations) {
+  function changeActionBySystem(model, animations) {
     mixer = new THREE.AnimationMixer(model);
     actions = {};
 
@@ -166,6 +177,7 @@ export default function User() {
     if (mixer) mixer.update(dt);
     if (mixer2) mixer2.update(dt);
     requestAnimationFrame(animate);
+    stats && stats.update();
     renderer.render(scene, camera);
   }
 
