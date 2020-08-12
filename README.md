@@ -137,7 +137,7 @@ mat4   4*4的浮点矩阵
 ```js
 attribute vec4 a_position;
 uniform vec4 u_offset;
- 
+
 void main() {
    gl_Position = a_position + u_offset;
 }
@@ -155,7 +155,7 @@ var offsetLoc = gl.getUniformLocation(someProgram, "u_offset");
 gl.uniform4fv(offsetLoc, [1, 0, 0, 0]);  // 向右偏移一半屏幕宽度
 ```
 
-> 要注意的是全局变量属于单个着色程序，如果多个着色程序有同名全局变量，需要找到每个全局变量并设置自己的值。   
+> 要注意的是全局变量属于单个着色程序，如果多个着色程序有同名全局变量，需要找到每个全局变量并设置自己的值。  
 
 全局变量有很多类型，对应的类型有对应的设置方法。  
 
@@ -329,7 +329,7 @@ vec4 b = a * 2.0;// b 现在是 vec4(2, 4, 6, 8);
 mat4 a = ???
 mat4 b = ???
 mat4 c = a * b;
- 
+
 vec4 v = ???
 vec4 y = c * v;
 ```
@@ -807,6 +807,310 @@ renderer.setMeshData([{
   cells: [[0, 1, 2], [2, 0, 3]],
 }]);
 
+```
+
+### 6. 用着色器实现像素动画
+
+#### 6.1. 用着色器实现固定帧动画
+
+在片元着色器中替换纹理坐标的方式，来非常简单地实现固定帧动画.  
+
+```js
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+varying vec2 vUv;
+uniform sampler2D tMap;
+uniform float fWidth;
+uniform vec2 vFrames[3];
+uniform int frameIndex;
+
+void main() {
+  vec2 uv = vUv;
+  for (int i = 0; i < 3; i++) {
+    uv.x = mix(vFrames[i].x, vFrames[i].y, vUv.x) / fWidth;
+    if(float(i) == mod(float(frameIndex), 3.0)) break;
+  }
+  vec4 color = texture2D(tMap, uv);
+  gl_FragColor = color;
+}
+```
+
+利用片元着色器实现固定帧动画的关键部分，是 main 函数中的 for 循环。因为我们的动画只有 3 帧，所以最多只需要循环 3 次。  
+
+我们还需要一个重要的参数，vFrames。它是每一帧动画的图片起始 x 和结束 x 坐标，我们用这两个坐标和 vUv.x 计算插值，最后除以图片的总宽度 fWidth，就能得到对应的纹理 x 坐标。替换纹理坐标之后，我们就能实现一个会飞的小鸟了。  
+
+#### 6.2. 用着色器实现非固定帧动画
+
+##### 6.2.1. 用顶点着色器实现非固定帧动画
+
+先绘制出一个红色的正方形，然后用三维齐次矩阵实现旋转。具体来说，就是把顶点坐标进行矩阵运算.
+
+```js
+
+attribute vec2 a_vertexPosition;
+attribute vec2 uv;
+
+varying vec2 vUv;
+uniform float rotation;
+
+void main() {
+  gl_PointSize = 1.0;
+  vUv = uv;
+  float c = cos(rotation);
+  float s = sin(rotation);
+  mat3 transformMatrix = mat3(
+    c, s, 0,
+    -s, c, 0,
+    0, 0, 1
+  );
+  vec3 pos = transformMatrix * vec3(a_vertexPosition, 1);
+  gl_Position = vec4(pos, 1);
+}
+```
+
+再配合下面的 JavaScript 代码，就能让这个正方形旋转了。
+
+```js
+
+renderer.uniforms.rotation = 0.0;
+
+requestAnimationFrame(function update() {
+  renderer.uniforms.rotation += 0.05;
+  requestAnimationFrame(update);
+});
+```
+
+##### 6.2.2. 用片元着色器实现非固定帧动画
+
+将旋转放到片元着色器中处理
+
+```js
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+varying vec2 vUv;
+uniform vec4 color;
+uniform float rotation;
+
+void main() {
+  vec2 st = 2.0 * (vUv - vec2(0.5));
+  float c = cos(rotation);
+  float s = sin(rotation);
+  mat3 transformMatrix = mat3(
+    c, s, 0,
+    -s, c, 0,
+    0, 0, 1
+  );
+  vec3 pos = transformMatrix * vec3(st, 1.0);
+  float d1 = 1.0 - smoothstep(0.5, 0.505, abs(pos.x));
+  float d2 = 1.0 - smoothstep(0.5, 0.505, abs(pos.y));
+  gl_FragColor = d1 * d2 * color;
+}
+```
+
+**顶点着色器和片元着色器实现的旋转动画方向正好相反。**  
+
+因为在顶点着色器中，我们直接改变了顶点坐标，所以这样实现的旋转动画和 WebGL 坐标系（右手系）的方向一致，角度增大呈逆时针方向旋转。  
+
+而在片元着色器中，我们的绘制原理是通过距离场着色来实现的，所以这里的旋转实际上改变的是距离场的角度而不是图形角度，最终绘制的图形也是相对于距离场的。又因为距离场逆时针旋转，所以图形就顺时针旋转了。  
+
+> 一般来说，动画如果能使用顶点着色器实现，我们会尽量在顶点着色器中实现。因为在绘制一帧画面的时候，顶点着色器的运算量会大大少于片元着色器，所以使用顶点着色器消耗的性能更少。  
+
+但是，在片元着色器中实现非固定帧动画也有优势。我们可以使用片元着色器的技巧，如重复、随机、噪声等等来绘制更加复杂的效果。  
+
+比如说，我们把上面的代码稍微修改一下，使用取小数和取整数的函数，再用之前网格化的思路，来利用网格实现了大量的重复动画。这个做法充分利用了 GPU 的并行效率，比用其他方式把图形一个一个地绘制出来性能要高得多。  
+
+#### 6.3. 如何在着色器中实现缓动函数与非线性插值
+
+可以用 Shader 矩阵运算实现  
+
+实现一个着色器，它通过设置 translation 来改变图形位置  
+
+```js
+attribute vec2 a_vertexPosition;
+attribute vec2 uv;
+
+varying vec2 vUv;
+uniform vec2 translation;
+
+void main() {
+  gl_PointSize = 1.0;
+  vUv = uv;
+  mat3 transformMatrix = mat3(
+    1, 0, 0,
+    0, 1, 0,
+    translation, 1
+  );
+  vec3 pos = transformMatrix * vec3(a_vertexPosition, 1);
+  gl_Position = vec4(pos, 1);
+}
+```
+
+在 JavaScript 中，我们将 translation 依照时间变化传给上面的着色器，就可以让方块移动  
+
+```js
+const canvas = document.querySelector('canvas');
+const renderer = new GlRenderer(canvas);
+const program = renderer.compileSync(fragment, vertex);
+renderer.useProgram(program);
+renderer.uniforms.color = [1, 0, 0, 1];
+renderer.uniforms.translation = [-0.5, 0];
+
+const animator = new Animator({duration: 2000});
+animator.animate(renderer, ({target, timing}) => {
+  target.uniforms.translation = [-0.5 * (1 - timing.p) + 0.5 * timing.p, 0];
+});
+
+renderer.setMeshData([{
+  positions: [
+    [-0.25, -0.25],
+    [-0.25, 0.25],
+    [0.25, 0.25],
+    [0.25, -0.25],
+  ],
+  attributes: {
+    uv: [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+    ],
+  },
+  cells: [[0, 1, 2], [2, 0, 3]],
+}]);
+renderer.render();
+```
+
+在正常情况下，顶点着色器定义的变量在片元着色器中，都会被线性插值.  
+
+```js
+
+//顶点着色器
+attribute vec2 a_vertexPosition;
+attribute vec2 uv;
+attribute vec4 color;
+
+varying vec2 vUv;
+varying vec4 vColor;
+uniform vec4 uFromTo;
+uniform float uTime;
+
+void main() {
+  gl_PointSize = 1.0;
+  vUv = uv;
+  vColor = color;
+  gl_Position = vec4(a_vertexPosition, 1, 1);
+}
+
+//片元着色器
+
+#ifdef GL_ES
+precision highp float;
+#endif
+
+varying vec2 vUv;
+varying vec4 vColor;
+
+void main() {
+  gl_FragColor = vColor;
+}
+
+//JavaScript中的代码
+renderer.setMeshData([{
+  positions: [
+    [-0.5, -0.25],
+    [-0.5, 0.25],
+    [0.5, 0.25],
+    [0.5, -0.25],
+  ],
+  attributes: {
+    uv: [
+      [0, 0],
+      [0, 1],
+      [1, 1],
+      [1, 0],
+    ],
+    color: [
+      [1, 0, 0, 1],
+      [1, 0, 0, 1],
+      [0, 0.5, 0, 1],
+      [0, 0.5, 0, 1],
+    ],
+  },
+  cells: [[0, 1, 2], [2, 0, 3]],
+}]);
+renderer.render();
+```
+
+### 3. 用 WebGL 绘制三维立方体
+
+### 4. 相机和视图矩阵
+
+在初始情况下，相机的参考坐标和世界坐标是重合的。但是，当我们移动或者旋转相机的时候，相机的参考坐标和世界坐标就不重合了。  
+以相机为观察者的图形，所以我们就需要用一个变换，将世界坐标转换为相机坐标。这个变换的矩阵就是视图矩阵（ViewMatrix）。  
+
+一般来说，投影有两种方式，分别是正投影与透视投影。  
+
+正投影，它又叫做平行投影。正投影是将物体投影到一个长方体的空间（又称为视景体），并且无论相机与物体距离多远，投影的大小都不变。  
+
+透视投影则更接近我们的视觉感知。它投影的规律是，离相机近的物体大，离相机远的物体小。与正投影不同，正投影的视景体是一个长方体，而透视投影的视景体是一个棱台。  
+
+ortho 是计算正投影的函数，它的参数是视景体 x、y、z 三个方向的坐标范围，它的返回值就是投影矩阵。  
+perspective 是计算透视投影的函数，它的参数是近景平面 near、远景平面 far、视角 fov 和宽高比率 aspect，返回值也是投影矩阵。
+
+```js
+
+// 计算正投影矩阵
+function ortho(out, left, right, bottom, top, near, far) {
+   let lr = 1 / (left - right);
+   let bt = 1 / (bottom - top);
+   let nf = 1 / (near - far);
+   out[0] = -2 * lr;
+   out[1] = 0;
+   out[2] = 0;
+   out[3] = 0;
+   out[4] = 0;
+   out[5] = -2 * bt;
+   out[6] = 0;
+   out[7] = 0;
+   out[8] = 0;
+   out[9] = 0;
+   out[10] = 2 * nf;
+   out[11] = 0;
+   out[12] = (left + right) * lr;
+   out[13] = (top + bottom) * bt;
+   out[14] = (far + near) * nf;
+   out[15] = 1;
+   return out;
+}
+
+// 计算透视投影矩阵
+function perspective(out, fovy, aspect, near, far) {
+   let f = 1.0 / Math.tan(fovy / 2);
+   let nf = 1 / (near - far);
+   out[0] = f / aspect;
+   out[1] = 0;
+   out[2] = 0;
+   out[3] = 0;
+   out[4] = 0;
+   out[5] = f;
+   out[6] = 0;
+   out[7] = 0;
+   out[8] = 0;
+   out[9] = 0;
+   out[10] = (far + near) * nf;
+   out[11] = -1;
+   out[12] = 0;
+   out[13] = 0;
+   out[14] = 2 * far * near * nf;
+   out[15] = 0;
+   return out;
+}
 ```
 
 ## three.js
@@ -2364,9 +2668,69 @@ scene.add(mesh); //网格模型添加到场景中
 
 ### 2.9. 相机对象
 
+![相机对象](images/threejs11.png)
+
 #### 2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera
 
+对于正投影而言，一条直线放置的角度不同，投影在投影面上面的长短不同；对于透视投影而言，投影的结果除了与几何体的角度有关，还和距离相关， 人的眼睛观察世界就是透视投影，比如你观察一条铁路距离越远你会感到两条轨道之间的宽度越小。无论正投影还是透视投影，three.js都对相关的投影算法进行了封装， 大家只需要根据不同的应用场景自行选择不同的投影方式。使用OrthographicCamera相机对象的时候，three.js会按照正投影算法自动计算几何体的投影结果； 使用PerspectiveCamera相机对象的时候，three.js会按照透视投影算法自动计算几何体的投影结果。
 
+![相机对象](images/threejs12.png)
+
+##### 正投影相机对象OrthographicCamera  
+
+```js
+// 构造函数格式
+OrthographicCamera( left, right, top, bottom, near, far )
+```
+
+| 参数(属性) | 含义 |
+| left | 渲染空间的左边界 |
+| right | 渲染空间的右边界 |
+| top | 渲染空间的上边界 |
+| bottom | 渲染空间的下边界 |
+| near | near属性表示的是从距离相机多远的位置开始渲染，一般情况会设置一个很小的值。 默认值0.1 |
+| far | far属性表示的是距离相机多远的位置截止渲染，如果设置的值偏小小，会有部分场景看不到。 默认值1000 |
+
+![正投影相机对象](images/threejs13.png)
+
+> 注意  
+
+左右边界的距离与上下边界的距离比值与画布的渲染窗口的宽高比例要一致，否则三维模型的显示效果会被单方向不等比例拉伸  
+
+##### 透视投影相机PerspectiveCamera
+
+```js
+/**
+ * 透视投影相机设置
+ */
+var width = window.innerWidth; //窗口宽度
+var height = window.innerHeight; //窗口高度
+/**透视投影相机对象*/
+var camera = new THREE.PerspectiveCamera(60, width / height, 1, 1000);
+camera.position.set(200, 300, 200); //设置相机位置
+camera.lookAt(scene.position); //设置相机方向(指向的场景对象)
+```
+
+```js
+// 构造函数PerspectiveCamera格式
+PerspectiveCamera( fov, aspect, near, far )
+```
+
+| 参数 | 含义 | 默认值 |
+| fov | fov表示视场，所谓视场就是能够看到的角度范围，人的眼睛大约能够看到180度的视场，视角大小设置要根据具体应用，一般游戏会设置60~90度 | 45 |
+| aspect | aspect表示渲染窗口的长宽比，如果一个网页上只有一个全屏的canvas画布且画布上只有一个窗口，那么aspect的值就是网页窗口客户区的宽高比 | window.innerWidth/window.innerHeight |
+| near | near属性表示的是从距离相机多远的位置开始渲染，一般情况会设置一个很小的值。 | 0.1 |
+| far | far属性表示的是距离相机多远的位置截止渲染，如果设置的值偏小小，会有部分场景看不到 | 1000 |
+
+![透视影相机对象](images/threejs14.png)
+
+相机位置.posiiotn和.lookAt(相机拍摄目标位置)
+
+![透视影相机对象](images/threejs15.png)
+
+通过位置属性.posiiotn可以设置相机的位置。  
+
+.lookAt()方法用来指定相机拍摄对象的坐标位置，.lookAt()方法的参数是表示位置坐标的三维向量对象Vector3，所以.lookAt()方法的参数可以通过代码new THREE.Vector3(x,y,z)设置。实际开发的时候，你希望相机对准哪个对象，就返回那个对象的位置属性.posiiotn  
 
 ### 2.10. 文字 TextGeometry
 
@@ -2422,14 +2786,229 @@ bevelSize：倒角宽度
 
 Threejs提供了一系列用户编辑和播放关键帧动画的API,例如关键帧KeyframeTrack、剪辑AnimationClip、操作AnimationAction、混合器AnimationMixer。  
 
+> 关键帧轨道(KeyframeTrack)是关键帧(keyframes)的定时序列, 它由时间和相关值的列表组成, 用来让一个对象的某个特定属性动起来。  
 
+KeyframeTrack( name : String, times : Array, values : Array, interpolation : Constant )  
+name - 关键帧轨道(KeyframeTrack)的标识符.  
+times - 关键帧的时间数组, 被内部转化为 Float32Array.  
+values - 与时间数组中的时间点相关的值组成的数组, 被内部转化为 Float32Array.  
+interpolation - 使用的插值类型。  
 
+```js
+// 创建名为Box对象的关键帧数据
+var times = [0, 10]; //关键帧时间数组，离散的时间点序列
+var values = [0, 0, 0, 150, 0, 0]; //与时间点对应的值组成的数组
+// 创建位置关键帧对象：0时刻对应位置0, 0, 0   10时刻对应位置150, 0, 0
+var posTrack = new THREE.KeyframeTrack('Box.position', times, values);
+// 创建颜色关键帧对象：10时刻对应颜色1, 0, 0   20时刻对应颜色0, 0, 1
+var colorKF = new THREE.KeyframeTrack('Box.material.color', [10, 20], [1, 0, 0, 0, 0, 1]);
+// 创建名为Sphere对象的关键帧数据  从0~20时间段，尺寸scale缩放3倍
+var scaleTrack = new THREE.KeyframeTrack('Sphere.scale', [0, 20], [1, 1, 1, 3, 3, 3]);
+```
+
+> 动画剪辑（AnimationClip）是一个可重用的关键帧轨道集，它代表动画。  
+
+AnimationClip( name : String, duration : Number, tracks : Array )  
+name - 此剪辑的名称  
+duration - 持续时间 (单位秒). 如果传入负数, 持续时间将会从传入的数组中计算得到。  
+tracks - 一个由关键帧轨道（KeyframeTracks）组成的数组。  
+
+```js
+// duration决定了默认的播放时间，一般取所有帧动画的最大时间
+// duration偏小，帧动画数据无法播放完，偏大，播放完帧动画会继续空播放
+var duration = 20;
+// 多个帧动画作为元素创建一个剪辑clip对象，命名"default"，持续时间20
+var clip = new THREE.AnimationClip("default", duration, [posTrack, colorKF, scaleTrack]);
+```
+
+> AnimationActions 用来调度存储在AnimationClips中的动画。  
+
+AnimationAction( mixer : AnimationMixer, clip : AnimationClip, localRoot : Object3D )  
+mixer - 被此动作控制的 *动画混合器*  
+clip - *动画剪辑* 保存了此动作当中的动画数据  
+localRoot - 动作执行的根对象  
+
+> AnimationMixer动画混合器是用于场景中特定对象的动画的播放器。当场景中的多个对象独立动画时，每个对象都可以使用同一个动画混合器。  
+
+AnimationMixer( rootObject : Object3D )  
+rootObject - 混合器播放的动画所属的对象  
+
+```js
+/**
+  * 播放编辑好的关键帧数据
+  */
+// group作为混合器的参数，可以播放group中所有子对象的帧动画
+var mixer = new THREE.AnimationMixer(group);
+// 剪辑clip作为参数，通过混合器clipAction方法返回一个操作对象AnimationAction
+var AnimationAction = mixer.clipAction(clip);
+//通过操作Action设置播放方式
+AnimationAction.timeScale = 20; //默认1，可以调节播放速度
+// AnimationAction.loop = THREE.LoopOnce; //不循环播放
+AnimationAction.play(); //开始播放
+```
 
 ### 2.12. 骨骼动画、变形动画
 
+Threejs骨骼动画需要通过骨骼网格模型类SkinnedMesh来实现，一般来说骨骼动画模型都是3D美术创建，然后程序员通过threejs引擎加载解析，为了让大家更深入理解骨骼动画，下面就通过threejs程序编写一个简易的骨骼动画。  
+
+#### Bone
+
+通过Bone类可以实例化一个骨关节对象，然后通过多个骨关节对象可以构成一个骨骼层级系统，Bone基类是Object3D,可以通过add方法给一个骨关节对象Bone添加一个子骨关节Bone。
+
+```js
+var Bone1 = new THREE.Bone(); //关节1，用来作为根关节
+var Bone2 = new THREE.Bone(); //关节2
+var Bone3 = new THREE.Bone(); //关节3
+// 设置关节父子关系   多个骨头关节构成一个树结构
+Bone1.add(Bone2);
+Bone2.add(Bone3);
+// 设置关节之间的相对位置
+//根关节Bone1默认位置是(0,0,0)
+Bone2.position.y = 60; //Bone2相对父对象Bone1位置
+Bone3.position.y = 40; //Bone3相对父对象Bone2位置
+```
+
+#### 骨架Skeleton
+
+Threejs通过Skeleton类可以把所有骨关节对象Bone包含进来。  
+
+```js
+// 所有Bone对象插入到Skeleton中，全部设置为.bones属性的元素
+var skeleton = new THREE.Skeleton([Bone1, Bone2, Bone3]); //创建骨骼系统
+// 查看.bones属性中所有骨关节Bone
+console.log(skeleton.bones);
+// 返回所有关节的世界坐标
+skeleton.bones.forEach(elem => {
+  console.log(elem.getWorldPosition(new THREE.Vector3()));
+});
+```
+
+#### Geometry(.skinWeights和.skinIndices属性)
+
+几何体Geometry的属性.skinWeights和.skinIndices主要作用是用来设置几何体的顶点位置是如何受骨关节运动影响的。比如几何体Geometry的顶点位置数据是你皮肤上的一个个点位，如果你的骨关节运动了，你的皮肤外形会跟着变化，就相当于Geometry的顶点坐标需要跟着骨关节变化，这时候需要注意，关节外面包裹的一层皮肤，不同区域变形程度不同，那也就是说如果骨关节Bone变化了，几何体Geometry顶点要像皮肤一样不同区域的顶点变化程度不同。这也正是.skinWeights和.skinIndices属性出现的原因，.skinWeights的字面意思就是设置骨骼蒙皮的权重。  
+
+.skinWeights表示的是几何体顶点权重数据，当使用骨骼动画网格模型SkinnedMesh的时候, 每个顶点最多可以有4个骨关节Bone影响它. skinWeights属性是一个权重值数组，对应于几何体中顶点的顺序。 例如，第一个skinWeight将对应于几何体中的第一个顶点. 由于每个顶点可以被4个骨关节Bone修改，因此使用四维向量对象Vector4表示一个顶点的权重.  
+
+四维向量Vector4每个分量的值通常应在0和1之间。当设置为0时，骨关节Bone变换将不起作用；设置为0.5时，将产生50％的影响；设置为100％时，会产生100％的影响。 如果只有一个骨关节Bone与顶点关联，那么你只需要考虑设置四维向量Vector4的第一个分量，其余分量的可以忽略并设置为0.  
+
+顶点索引属性.skinIndices就像skinWeights属性一样，skinIndices的值对应几何体的顶点. 每个顶点最多可以有4个与之关联的骨关节Bone。  
+
+```js
+//遍历几何体顶点，为每一个顶点设置蒙皮索引、权重属性
+//根据y来分段，0~60一段、60~100一段、100~120一段
+for (var i = 0; i < geometry.vertices.length; i++) {
+  var vertex = geometry.vertices[i]; //第i个顶点
+  if (vertex.y <= 60) {
+    // 设置每个顶点蒙皮索引属性  受根关节Bone1影响
+    geometry.skinIndices.push(new THREE.Vector4(0, 0, 0, 0));
+    // 设置每个顶点蒙皮权重属性
+    // 影响该顶点关节Bone1对应权重是1-vertex.y/60
+    geometry.skinWeights.push(new THREE.Vector4(1 - vertex.y / 60, 0, 0, 0));
+  } else if (60 < vertex.y && vertex.y <= 60 + 40) {
+    // Vector4(1, 0, 0, 0)表示对应顶点受关节Bone2影响
+    geometry.skinIndices.push(new THREE.Vector4(1, 0, 0, 0));
+    // 影响该顶点关节Bone2对应权重是1-(vertex.y-60)/40
+    geometry.skinWeights.push(new THREE.Vector4(1 - (vertex.y - 60) / 40, 0, 0, 0));
+  } else if (60 + 40 < vertex.y && vertex.y <= 60 + 40 + 20) {
+    // Vector4(2, 0, 0, 0)表示对应顶点受关节Bone3影响
+    geometry.skinIndices.push(new THREE.Vector4(2, 0, 0, 0));
+    // 影响该顶点关节Bone3对应权重是1-(vertex.y-100)/20
+    geometry.skinWeights.push(new THREE.Vector4(1 - (vertex.y - 100) / 20, 0, 0, 0));
+  }
+}
+```
+
+#### 骨骼网格模型SkinnedMesh
+
+SkinnedMesh类的字面意思就是骨骼网格模型，骨骼网格模型SkinnedMesh的基类是普通网格模型Mesh，SkinnedMesh和Mesh一样都是网格模型，只是一个有骨骼动画功能，一个没有骨骼动画功能。  
+
+骨骼网格模型SkinnedMesh绑定骨骼系统。  
+
+```js
+//骨骼关联网格模型
+SkinnedMesh.add(Bone1); //根骨头关节添加到网格模型
+SkinnedMesh.bind(skeleton); //网格模型绑定到骨骼系统
+```
+
 ### 2.13. 语音模块
 
+Threejs提供了一系列音频相关的API：音频Audio、位置音频PositionalAudio、监听者AudioListener、音频分析器AudioAnalyser、音频加载器AudioLoader。  
+
+音频Audio、位置音频PositionalAudio等Threejs类本质上是对原生Web Audio API的封装。  
+
+频率数据可视化: 获取频率数据，然后通过频率数据控制网格模型的长度方向伸缩变化。  
+
+```js
+// 获得频率数据N个
+var arr = analyser.getFrequencyData();
+// console.log(arr);
+// 遍历组对象，每个网格子对象设置一个对应的频率数据
+group.children.forEach((elem, index) => {
+  elem.scale.y = arr[index] / 80
+  elem.material.color.r = arr[index] / 200;
+});
+```
+
 ### 2.14. 模型文件加载
+
+#### Threejs导出模型信息
+
+Geometry、Material、Light、Object3D等类，你可以发现这些类都提供了一个方法.toJSON()通过这个方法可以导出Threejs三维模型的各类数据，该方法的功能就是把Threejs的几何体、材质、光源等对象转化为JSON格式导出。  
+
+导出几何体信息。  
+
+```js
+var geometry = new THREE.BoxGeometry(100, 100, 100);
+// 控制台查看立方体数据
+console.log(geometry);
+// 控制台查看geometry.toJSON()结果
+console.log(geometry.toJSON());
+// JSON对象转化为字符串
+console.log(JSON.stringify(geometry.toJSON()));
+// JSON.stringify()方法内部会自动调用参数的toJSON()方法
+console.log(JSON.stringify(geometry));
+```
+
+导出材质信息。  
+
+```js
+var material = new THREE.MeshLambertMaterial({
+  color: 0x0000ff,
+}); //材质对象Material
+console.log(material);
+console.log(material.toJSON());
+console.log(JSON.stringify(material));
+```
+
+导出场景scene信息。
+
+```js
+var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+scene.add(mesh); //网格模型添加到场景中
+console.log(scene);
+console.log(scene.toJSON());
+```
+
+自定义模型加载器文件  
+
+实际开发中，加载一种特定格式的模型文件，Threejs在three.js-master\examples\js\loaders目录下会提供一系列的加载器，这些加载器本质上都是解析模型文件的字符串，通过正则表达式提取相关的顶点、材质等信息转化为Threejs自身的类表示的对象。  
+
+![加载器](images/threejs10.png)
+
+加载Three.js导出的模型数据  
+
+```js
+var loader = new THREE.BufferGeometryLoader();
+loader.load('bufferGeometry.json',function (geometry) {
+  // 控制台查看加载放回的threejs对象结构
+  console.log(geometry);
+  var material = new THREE.MeshLambertMaterial({
+    color: 0x0000ff,
+  }); //材质对象Material
+  var mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+  scene.add(mesh); //网格模型添加到场景中
+})
+```
 
 ### 2.15. 性能分析，及优化
 
@@ -2485,8 +3064,3 @@ begin，在你要测试的代码前面调用begin函数，在你代码执行完�
 5、重点优化requestAnimationFrame内的方法；  
 
 6、如果有大量外部模型，一定要结合使用gltf-pipeline与Draco。  
-
-
-
-
-

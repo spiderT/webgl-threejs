@@ -7,14 +7,21 @@ import Bus from '../../../eventBus';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 
-const fontLoader = new THREE.FontLoader();
 const clock = new THREE.Clock();
-const scene = new THREE.Scene();
-const renderer = new THREE.WebGLRenderer({ antialias: true });
-const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 100);
 
 export default function User() {
-  let mixer, actions, activeAction, previousAction, mixer2, font, guestAnimations, guestModel, stats;
+  let renderer,
+    scene,
+    camera,
+    stats,
+    mixer,
+    actions,
+    activeAction,
+    previousAction,
+    mixer2,
+    font,
+    guestAnimations,
+    guestModel;
   let api = { state: 'Idle' };
   const canvasRef = useRef();
 
@@ -23,22 +30,60 @@ export default function User() {
     animate();
   }, []);
 
-  function init() {
-    // 可以通过调整position，看到不同的效果
-    camera.position.set(-10, 3, 10);
-    camera.lookAt(new THREE.Vector3(0, 2, 0));
-
+  // 设置场景
+  function initScene() {
+    scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe0e0e0);
     scene.fog = new THREE.Fog(0xe0e0e0, 20, 100);
+  }
 
+  // 可以通过调整position，看到不同的效果
+  function initCamera() {
+    camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 100);
+    camera.position.set(-10, 3, 10);
+    camera.lookAt(new THREE.Vector3(0, 2, 0));
+  }
 
-    // stats
+  // stats
+  function initStats() {
     stats = new Stats();
     stats.dom.style.position = 'absolute';
     stats.dom.style.left = '140px';
     stats.dom.style.bottom = '10px';
-    stats.dom.style.top = null;  // 解决bottom不生效
+    stats.dom.style.top = null; // 解决bottom不生效
     canvasRef.current.appendChild(stats.dom);
+  }
+
+  // 加载字体文件
+  function loadFont() {
+    const fontLoader = new THREE.FontLoader();
+    fontLoader.load('/resources/fonts/helvetiker_regular.typeface.json', (response) => (font = response));
+  }
+
+  // 渲染器
+  function initRender() {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    canvasRef.current.appendChild(renderer.domElement);
+  }
+
+  // 控制窗口视图
+  function initControls() {
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enablePan = false;
+    controls.enableZoom = false;
+    controls.target.set(0, 1, 0);
+    controls.update();
+  }
+
+  function init() {
+    initCamera();
+    initStats();
+    initScene();
+    initRender();
+    initControls();
 
     // lights
     createLights(scene);
@@ -47,19 +92,18 @@ export default function User() {
     createGround(scene);
 
     // 加载font
-    fontLoader.load('/resources/fonts/helvetiker_regular.typeface.json', (response) => (font = response));
+    loadFont();
 
     // 人物模型
     loadModel(
       scene,
       require('../../../resources/gltf/Xbot.glb'),
       (model) => {
-        guestModel = model
+        guestModel = model;
         // 移动距离
         model.position.set(0, 0, 5);
         // 旋转，面对面
         model.rotation.y = -Math.PI;
-
       },
       (model, gltf) => changeActionByGuest(model, gltf)
     );
@@ -74,17 +118,6 @@ export default function User() {
       },
       (model, gltf) => changeActionBySystem(model, gltf.animations)
     );
-
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputEncoding = THREE.sRGBEncoding;
-    canvasRef.current.appendChild(renderer.domElement);
-
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enablePan = false;
-    controls.enableZoom = false;
-    controls.target.set(0, 1, 0);
-    controls.update();
 
     window.addEventListener('resize', () => onWindowResize(camera, renderer), false);
   }
@@ -121,7 +154,7 @@ export default function User() {
       number = 3;
     } else if (rule === 'bye') {
       // 移除模型
-      removeModel(scene, guestModel)
+      removeModel(scene, guestModel);
     }
     mixer2.clipAction(guestAnimations[number]).play();
   });
