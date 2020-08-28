@@ -1,79 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
   <title>three.js</title>
   <style>
-    body {
-      margin: 0;
-      overflow: hidden;
+    .label {
+      color: #FFF;
+      font-family: sans-serif;
+      padding: 2px;
+      background: rgba(0, 0, 0, .6);
     }
   </style>
-
 </head>
 
 <body>
-  <script src="../three.min.js"></script>
-  <script>
-    // 创建场景对象Scene
-    const scene = new THREE.Scene();
+  <script type="module">
 
-    // 纹理贴图映射到一个矩形平面上
+    import * as THREE from '../demo14-loader/three.module.js';
+		import { OrbitControls } from '../demo14-loader/jsm/controls/OrbitControls.js';
 
-    // var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
-    var geometry = new THREE.CylinderGeometry(60, 60, 25,25); //圆柱
-    //
-    // 材质对象1
-    var material_1 = new THREE.MeshPhongMaterial({
-      color: 0xff0000
-    })
-    var textureLoader = new THREE.TextureLoader(); // 纹理加载器
-    var texture = textureLoader.load('./11.jpg'); // 加载图片，返回Texture对象
-    // 材质对象2
-    var material_2 = new THREE.MeshLambertMaterial({
-      map: texture, // 设置纹理贴图
-      // wireframe:true,
-    });
-    // 设置材质数组
-    var materialArr = [material_2, material_1, material_1, material_1, material_1, material_1];
+    let camera, scene, renderer, earth;
+    const textureLoader = new THREE.TextureLoader();
 
-    // 设置数组材质对象作为网格模型材质参数
-    var mesh = new THREE.Mesh(geometry, materialArr); //网格模型对象Mesh
-    scene.add(mesh); //网格模型添加到场景中
+    init();
+    animate();
 
+    function init() {
 
+      const EARTH_RADIUS = 1;
 
-    // 光源设置
-    //点光源
-    const point = new THREE.PointLight(0xffffff);
-    point.position.set(400, 200, 300); //点光源位置
-    scene.add(point); //点光源添加到场景中
+      camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 0.1, 200 );
+      camera.position.set( 1, 1, 4 );
 
-    //环境光
-    const ambient = new THREE.AmbientLight(0x444444);
-    scene.add(ambient);
+      scene = new THREE.Scene();
 
-    // 相机设置
-    const width = window.innerWidth; //窗口宽度
-    const height = window.innerHeight; //窗口高度
-    const k = width / height; //窗口宽高比
-    const s = 200; //三维场景显示范围控制系数，系数越大，显示的范围越大
+      const dirLight = new THREE.DirectionalLight( 0xffffff );
+      dirLight.position.set( 0, 0, 1 );
+      scene.add( dirLight );
 
-    //创建相机对象
-    const camera = new THREE.OrthographicCamera(-s * k, s * k, s, -s, 1, 1000);
-    camera.position.set(200, 300, 200); //设置相机位置
-    camera.lookAt(scene.position); //设置相机方向(指向的场景对象)
+      const earthGeometry = new THREE.SphereBufferGeometry( EARTH_RADIUS, 16, 16 );
+      const earthMaterial = new THREE.MeshPhongMaterial({
+        specular: 0x333333,
+        shininess: 5,
+        map: textureLoader.load( './earth_atmos_2048.jpg' ),
+        normalScale: new THREE.Vector2( 0.85, 0.85 )
+      });
+      earth = new THREE.Mesh( earthGeometry, earthMaterial );
+      scene.add( earth );
+    
+      renderer = new THREE.WebGLRenderer();
+      renderer.setPixelRatio( window.devicePixelRatio );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      document.body.appendChild( renderer.domElement );
 
-    // 创建渲染器对象
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(width, height); //设置渲染区域尺寸
-    renderer.setClearColor(0xb9d3ff, 1); //设置背景颜色
-    document.body.appendChild(renderer.domElement); //body元素中插入canvas对象
+      const controls = new OrbitControls( camera, renderer.domElement );
+      controls.minDistance = 5;
+      controls.maxDistance = 100;
+    }
 
-    //执行渲染操作   指定场景、相机作为参数
-    renderer.render(scene, camera);
-  </script>
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+		</script>
 </body>
 
 </html>

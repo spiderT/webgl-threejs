@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebGL Hello world</title>
+</head>
+<body>
+  <canvas width="300" height="300"></canvas>
+  <script>
+    const canvas = document.querySelector('canvas');
+
+    // 通过方法getContext()获取WebGL上下文
+    const gl = canvas.getContext('webgl');
+    
+    // 顶点着色器源码
+    const vertex = `
+      attribute vec2 position;
+
+      void main() {
+        gl_PointSize = 1.0;
+        gl_Position = vec4(position * 0.5, 1.0, 1.0);
+      }
+    `;
+
+    // 片元着色器源码  
+    const fragment = `
+      precision mediump float;
+
+      void main()
+      {
+        gl_FragColor = vec4(1, 0, 0, 1);
+      }    
+    `;
+
+    // 创建顶点着色器对象
+    const vertexShader = gl.createShader(gl.VERTEX_SHADER);
+
+    // 引入顶点着色器源代码
+    gl.shaderSource(vertexShader, vertex);
+
+    // 编译顶点着色器
+    gl.compileShader(vertexShader);
+
+    // 创建片元着色器对象
+    const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+
+    // 引入片元着色器源代码
+    gl.shaderSource(fragmentShader, fragment);
+
+    // 编译片元着色器
+    gl.compileShader(fragmentShader);
+
+    // 创建程序对象program
+    const program = gl.createProgram();
+
+    // 附着顶点着色器到program
+    gl.attachShader(program, vertexShader);
+
+    // 附着片元着色器到program
+    gl.attachShader(program, fragmentShader);
+
+    // 链接program
+    gl.linkProgram(program);
+
+    // 使用program
+    gl.useProgram(program);
+
+    // 顶点坐标的数据
+    const points = new Float32Array([
+      -1, -1,
+      0, 1,
+      1, -1,
+    ]);
+
+    // 创建缓冲区对象
+    const bufferId = gl.createBuffer();
+
+    // 绑定缓冲区对象,激活buffer
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
+
+    // 顶点数组data数据传入缓冲区
+    gl.bufferData(gl.ARRAY_BUFFER, points, gl.STATIC_DRAW);
+
+    // 获取顶点着色器的位置变量position，即vPosition指向position变量。
+    const vPosition = gl.getAttribLocation(program, 'position');
+
+    // 缓冲区中的数据按照一定的规律传递给位置变量
+    // gl.vertexAttribPointer(positionAttributeLocation, size, type, normalize, stride, offset)
+    // size:2  每次迭代运行提取两个单位数据
+    // type:gl.FLOAT  每个单位的数据类型是32位浮点型
+    // normalize: false  不需要归一化数据
+    // stride:0  0=移动单位数量 * 每个单位占用内存（sizeof(type)）
+    // offset:0   从缓冲起始位置开始读取
+    gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
+
+    // 允许数据传递
+    gl.enableVertexAttribArray(vPosition);
+
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // 开始绘制图形
+    // gl.drawArrays(primitiveType, offset, count);
+    // count = 3，所以顶点着色器将运行三次
+    gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
+  </script>
+</body>
+</html>
