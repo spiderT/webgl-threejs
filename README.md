@@ -11,7 +11,9 @@
 
 **目录threejs-playgame是学习threejs的一个综合性的electron的threejs-demo，类似游戏中的入门引导，用户聊天文字朗读，及相应动作**
 
-基于face-api.js有一个人脸识别登录的功能
+基于face-api.js有一个人脸识别登录的功能，登录后进入游戏
+
+![demo](images/demo.gif)
 
 ```text
 cd threejs-playgame-browser
