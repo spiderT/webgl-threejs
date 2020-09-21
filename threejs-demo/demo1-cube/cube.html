@@ -28,6 +28,8 @@
 
     //材质对象Material
     const mesh = new THREE.Mesh(geometry, material); //网格模型对象Mesh
+    // mesh.position.set(100, 0, 0)
+    console.log('mesh', mesh)
     scene.add(mesh); //网格模型添加到场景中
 
     // 光源设置
@@ -39,6 +41,10 @@
     //环境光
     const ambient = new THREE.AmbientLight(0x444444);
     scene.add(ambient);
+
+    // 辅助坐标系
+    // The X axis is red. The Y axis is green. The Z axis is blue.
+    scene.add(new THREE.AxesHelper(120));
 
     // 相机设置
     const width = window.innerWidth; //窗口宽度
