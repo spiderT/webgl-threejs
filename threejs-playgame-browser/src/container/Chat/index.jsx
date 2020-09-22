@@ -30,13 +30,12 @@ function Chat() {
   }
 
   function sendMsg() {
-    setMsgs(
-      msgs.concat({
-        name: MY_NAME,
-        msg: inputValue,
-        id: new Date(),
-      })
-    );
+    msgs.push({
+      name: MY_NAME,
+      msg: inputValue,
+      id: new Date(),
+    });
+    setMsgs(msgs);
 
     speak(inputValue);
 
@@ -62,14 +61,13 @@ function Chat() {
   function systemAction(chatIndex) {
     const { msg = '', action = '' } = SYSTEM_WORDS[chatIndex];
     Bus.emit('createSystemText', msg);
-    // todo
-    // setMsgs(
-    //   msgs.concat({
-    //     name: 'Robot',
-    //     msg: result.msg,
-    //     id: new Date(),
-    //   })
-    // );
+    setMsgs(
+      msgs.concat({
+        name: 'Robot',
+        msg,
+        id: new Date(),
+      })
+    );
     speak(msg);
     action && Bus.emit('changeSystemStatus', action);
   }

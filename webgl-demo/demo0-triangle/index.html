@@ -102,6 +102,8 @@
     // 开始绘制图形
     // gl.drawArrays(primitiveType, offset, count);
     // count = 3，所以顶点着色器将运行三次
+
+    // webgl支持的图元类型有七种，分别是 gl.POINTS(点), gl.LINES(线段), gl.LINE_STRIP(线条), gl.LINE_LOOP(回路), gl.TRIANGLES(三角形), gl.TRIANGLE_STRIP(三角带), gl.TRIANGLE_FAN(三角扇)。
     gl.drawArrays(gl.TRIANGLES, 0, points.length / 2);
   </script>
 </body>
