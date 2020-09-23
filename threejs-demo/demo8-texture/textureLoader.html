@@ -42,10 +42,12 @@
 
       const earthGeometry = new THREE.SphereBufferGeometry( EARTH_RADIUS, 16, 16 );
       const earthMaterial = new THREE.MeshPhongMaterial({
+        // 高光色 该属性指定该材质的光亮程度及高光部分的颜色。
         specular: 0x333333,
+        // 该属性指定镜面高光部分的亮度。默认值：30
         shininess: 5,
         map: textureLoader.load( './earth_atmos_2048.jpg' ),
-        normalScale: new THREE.Vector2( 0.85, 0.85 )
+        // normalScale: new THREE.Vector2( 0.85, 0.85 )
       });
       earth = new THREE.Mesh( earthGeometry, earthMaterial );
       scene.add( earth );

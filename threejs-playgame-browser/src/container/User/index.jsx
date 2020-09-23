@@ -34,11 +34,13 @@ export default function User() {
   function initScene() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe0e0e0);
+    // 添加雾效, 从相机的起始处长度为20开始,100结束的区域在场景中添加雾效,雾效的颜色是e0e0e0
     scene.fog = new THREE.Fog(0xe0e0e0, 20, 100);
   }
 
   // 可以通过调整position，看到不同的效果
   function initCamera() {
+    // 透视投影相机
     camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.25, 100);
     camera.position.set(-10, 3, 10);
     camera.lookAt(new THREE.Vector3(0, 2, 0));
@@ -124,6 +126,7 @@ export default function User() {
 
   function changeActionByGuest(model, gltf) {
     guestAnimations = gltf.animations;
+    console.log('guest---->animations', guestAnimations)
     mixer2 = new THREE.AnimationMixer(model);
   }
 
@@ -160,6 +163,7 @@ export default function User() {
   });
 
   function changeActionBySystem(model, animations) {
+    console.log('system---->animations', animations)
     mixer = new THREE.AnimationMixer(model);
     actions = {};
 

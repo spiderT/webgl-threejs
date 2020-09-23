@@ -6,6 +6,18 @@ import Bus from '../../eventBus';
 const MY_NAME = '堂堂唐家大姐';
 let chatIndex = 0; // 聊天轮数
 
+const SYSTEM = 'SYSTEM';
+const GUEST = 'GUEST';
+
+let voices = [];
+const synth = window.speechSynthesis;
+const say = new window.SpeechSynthesisUtterance();
+synth.addEventListener('voiceschanged', getSupportVoices);
+
+function getSupportVoices() {
+  voices = synth.getVoices();
+}
+
 function Chat() {
   const [isMsgShow, setMsgShow] = useState(false);
   const [isActionShow, setActionShow] = useState(false);
@@ -37,7 +49,7 @@ function Chat() {
     });
     setMsgs(msgs);
 
-    speak(inputValue);
+    speak(inputValue, GUEST);
 
     actionRule(inputValue);
     setInputValue('');
@@ -50,11 +62,16 @@ function Chat() {
     }, 1000);
   }
 
-  function speak(words) {
+  function speak(words, type) {
     if (!words) {
       return;
     }
-    const say = new window.SpeechSynthesisUtterance(words);
+    if (type === GUEST) {
+      say.lang = voices[0].lang;
+    } else {
+      say.lang = voices[1].lang;
+    }
+    say.text = words;
     window.speechSynthesis.speak(say);
   }
 
@@ -68,7 +85,7 @@ function Chat() {
         id: new Date(),
       })
     );
-    speak(msg);
+    speak(msg, SYSTEM);
     action && Bus.emit('changeSystemStatus', action);
   }
 

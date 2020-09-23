@@ -20,16 +20,16 @@
     const scene = new THREE.Scene();
 
     // 纹理贴图映射到一个矩形平面上
-    var geometry = new THREE.SphereGeometry(60, 25, 25); //球体
+    const geometry = new THREE.SphereGeometry(60, 25, 25); //球体
 
 
     /**
      * 创建纹理对象的像素数据
      */
-    var width1 = 32; //纹理宽度
-    var height1 = 32; //纹理高度
-    var size = width1 * height1; //像素大小
-    var data = new Uint8Array(size * 3); //size*3：像素在缓冲区占用空间
+    const width1 = 32; //纹理宽度
+    const height1 = 32; //纹理高度
+    const size = width1 * height1; //像素大小
+    const data = new Uint8Array(size * 3); //size*3：像素在缓冲区占用空间
     for (let i = 0; i < size * 3; i += 3) {
       // 随机设置RGB分量的值
       data[i] = 255 * Math.random()
@@ -37,12 +37,12 @@
       data[i + 2] = 255 * Math.random()
     }
     // 创建数据文理对象   RGB格式：THREE.RGBFormat
-    var texture = new THREE.DataTexture(data, width1, height1, THREE.RGBFormat);
+    const texture = new THREE.DataTexture(data, width1, height1, THREE.RGBFormat);
     texture.needsUpdate = true; //纹理更新
     //打印纹理对象的image属性
     // console.log(texture.image);
 
-    var material = new THREE.MeshPhongMaterial({
+    const material = new THREE.MeshPhongMaterial({
       map: texture, // 设置纹理贴图
     }); //材质对象Material
     var mesh = new THREE.Mesh(geometry, material);

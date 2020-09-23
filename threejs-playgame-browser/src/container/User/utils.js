@@ -11,10 +11,12 @@ let textMesh;
  * @param {*} scene 
  */
 function createLights(scene) {
+  // 使用 THREE.HemisphereLight 可以创建更加贴近自然的户外光照效果
   const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444);
   hemiLight.position.set(0, 20, 0);
   scene.add(hemiLight);
 
+  // 平行光
   const dirLight = new THREE.DirectionalLight(0xffffff);
   dirLight.position.set(3, 10, 10);
   scene.add(dirLight);
@@ -26,7 +28,9 @@ function createLights(scene) {
  */
 function createGround(scene) {
   const mesh = new THREE.Mesh(
+    // 创建一个平面几何体，前两个参数设置长和宽，第三个参数设置细粒度
     new THREE.PlaneBufferGeometry(2000, 2000),
+    // 创建一种光亮的材质
     new THREE.MeshPhongMaterial({
       color: 0x999999,
       depthWrite: false
@@ -35,6 +39,7 @@ function createGround(scene) {
   mesh.rotation.x = -Math.PI / 2;
   scene.add(mesh);
 
+  // 网格
   const grid = new THREE.GridHelper(200, 40, 0x000000, 0x000000);
   grid.material.opacity = 0.2;
   grid.material.transparent = true;
