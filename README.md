@@ -9,17 +9,142 @@
 目录webgl-demo是学习webgl的章节demo  
 目录threejs-demo是学习threejs的章节demo  
 
-**目录threejs-playgame是学习threejs的一个综合性的electron的threejs-demo，类似游戏中的入门引导，用户聊天文字朗读，及相应动作**
-
-基于face-api.js有一个人脸识别登录的功能，登录后进入游戏
+**目录threejs-playgame是学习threejs的一个综合性的的threejs-demo，类似游戏中的入门引导，用户聊天文字朗读，及相应动作**
 
 ![demo](images/demo.gif)
 
 ```text
-cd threejs-playgame-browser
+cd threejs-playgame
 npm i
 npm start
 ```
+
+基于face-api.js有一个人脸识别登录的功能，登录后进入游戏。  
+人脸识别比照图片路径：threejs-playgame/src/resources/images/p1.png, 可替换成自己照片。  
+另外可以在 threejs-playgame/src/container/Login/face-detection.js 修改识别精确度数据：matchedDistance。  
+
+```js
+this.options = Object.assign({
+    matchedScore: 0.7,
+    matchedDistance: 0.5,
+  },
+  options
+);
+```
+
+- [webgl-learn](#webgl-learn)
+  - [webgl](#webgl)
+    - [1. 工作原理](#1-工作原理)
+    - [2. 基础概念](#2-基础概念)
+      - [2.1. 顶点着色器](#21-顶点着色器)
+        - [2.1.1. Attributes 属性](#211-attributes-属性)
+        - [2.1.2. Uniforms 全局变量](#212-uniforms-全局变量)
+      - [2.2. 片断着色器](#22-片断着色器)
+        - [2.2.1. Uniform 全局变量（片断着色器中）](#221-uniform-全局变量片断着色器中)
+        - [2.2.2. Textures 纹理（片断着色器中）](#222-textures-纹理片断着色器中)
+        - [2.2.3. Varyings 可变量](#223-varyings-可变量)
+      - [2.3. GLSL](#23-glsl)
+    - [3. 常用api](#3-常用api)
+    - [4. 仿射变换](#4-仿射变换)
+      - [4.1. 向量的平移、旋转与缩放](#41-向量的平移旋转与缩放)
+      - [4.2. 缩放变换](#42-缩放变换)
+      - [4.3. 仿射变换的应用：实现粒子动画](#43-仿射变换的应用实现粒子动画)
+        - [4.3.1. 创建三角形](#431-创建三角形)
+        - [4.3.2. 设置 uniform 变量](#432-设置-uniform-变量)
+        - [4.4.3. 用 requestAnimationFrame 实现动画](#443-用-requestanimationframe-实现动画)
+    - [5. 绘制重复图案](#5-绘制重复图案)
+      - [5.1. 使用 background-image 来绘制重复图案](#51-使用-background-image-来绘制重复图案)
+      - [5.2. 使用 Shader 来绘制重复图案](#52-使用-shader-来绘制重复图案)
+    - [6. 用着色器实现像素动画](#6-用着色器实现像素动画)
+      - [6.1. 用着色器实现固定帧动画](#61-用着色器实现固定帧动画)
+      - [6.2. 用着色器实现非固定帧动画](#62-用着色器实现非固定帧动画)
+        - [6.2.1. 用顶点着色器实现非固定帧动画](#621-用顶点着色器实现非固定帧动画)
+        - [6.2.2. 用片元着色器实现非固定帧动画](#622-用片元着色器实现非固定帧动画)
+      - [6.3. 如何在着色器中实现缓动函数与非线性插值](#63-如何在着色器中实现缓动函数与非线性插值)
+    - [3. 用 WebGL 绘制三维立方体](#3-用-webgl-绘制三维立方体)
+    - [4. 相机和视图矩阵](#4-相机和视图矩阵)
+  - [three.js](#threejs)
+    - [1. 程序结构](#1-程序结构)
+      - [1.1. 材质Material](#11-材质material)
+        - [材质属性](#材质属性)
+        - [添加高光效果](#添加高光效果)
+      - [1.2. 光源Light](#12-光源light)
+        - [常见光源类型](#常见光源类型)
+      - [1.3. 相机Camera](#13-相机camera)
+      - [1.4. 鼠标操作三维场景](#14-鼠标操作三维场景)
+    - [2. 几何体顶点](#2-几何体顶点)
+      - [2.1. 顶点位置数据解析渲染](#21-顶点位置数据解析渲染)
+        - [点模型Points](#点模型points)
+        - [线模型Line](#线模型line)
+      - [2.2. 顶点颜色数据插值计算](#22-顶点颜色数据插值计算)
+        - [每个顶点设置一种颜色](#每个顶点设置一种颜色)
+      - [2.3. 顶点法向量数据光照计算](#23-顶点法向量数据光照计算)
+      - [2.4. 顶点索引复用顶点数据](#24-顶点索引复用顶点数据)
+        - [顶点索引.index](#顶点索引index)
+      - [2.5. Face3对象定义Geometry的三角形面](#25-face3对象定义geometry的三角形面)
+        - [三角形法线设置](#三角形法线设置)
+        - [三角形颜色设置](#三角形颜色设置)
+      - [2.6. 访问几何体对象的数据](#26-访问几何体对象的数据)
+      - [2.7. 几何体旋转、缩放、平移变换](#27-几何体旋转缩放平移变换)
+    - [3. 材质](#3-材质)
+      - [3.1. 点材质PointsMaterial](#31-点材质pointsmaterial)
+      - [3.2. 线材质](#32-线材质)
+      - [3.3. 网格材质](#33-网格材质)
+      - [3.4. 材质和模型对象对应关系](#34-材质和模型对象对应关系)
+      - [3.5. .side属性](#35-side属性)
+      - [3.6. 材质透明度.opacity](#36-材质透明度opacity)
+    - [4. 点、线、网格模型](#4-点线网格模型)
+      - [4.1. 点模型Points](#41-点模型points)
+      - [4.2. 线模型Line](#42-线模型line)
+      - [4.3. 网格模型Mesh](#43-网格模型mesh)
+      - [4.4. 对象克隆.clone()和复制.copy()](#44-对象克隆clone和复制copy)
+    - [2.5. 光源](#25-光源)
+      - [2.5.1. 环境光AmbientLight](#251-环境光ambientlight)
+      - [2.5.2. 点光源PointLight](#252-点光源pointlight)
+      - [2.5.3. 平行光DirectionalLight](#253-平行光directionallight)
+      - [2.5.4. 聚光源SpotLight](#254-聚光源spotlight)
+      - [2.5.5. 光照计算算法](#255-光照计算算法)
+      - [2.5.6. 平行光投影计算代码](#256-平行光投影计算代码)
+      - [2.5.7. 聚光光源投影计算](#257-聚光光源投影计算)
+    - [2.6. 层级模型、树结构](#26-层级模型树结构)
+      - [2.6.1. 组对象Group、层级模型](#261-组对象group层级模型)
+      - [2.6.2. 层级模型节点命名、查找、遍历](#262-层级模型节点命名查找遍历)
+      - [2.6.3. 坐标](#263-坐标)
+    - [2.7. 几何体对象、曲线、三维模型](#27-几何体对象曲线三维模型)
+      - [2.7.1. 几何体](#271-几何体)
+      - [2.7.2.  曲线](#272--曲线)
+      - [2.7.3. 样条曲线、贝赛尔曲线](#273-样条曲线贝赛尔曲线)
+      - [2.7.4. 多个线条组合曲线CurvePath](#274-多个线条组合曲线curvepath)
+      - [2.7.5. 曲线路径管道成型TubeGeometry](#275-曲线路径管道成型tubegeometry)
+      - [2.7.6. 旋转造型LatheGeometry](#276-旋转造型lathegeometry)
+      - [2.7.7. Shape对象和轮廓填充ShapeGeometry](#277-shape对象和轮廓填充shapegeometry)
+    - [2.8. 纹理贴图](#28-纹理贴图)
+      - [2.8.1. 创建纹理贴图](#281-创建纹理贴图)
+      - [2.8.2. 几何体顶点纹理坐标UV](#282-几何体顶点纹理坐标uv)
+        - [两组UV坐标](#两组uv坐标)
+        - [修改纹理坐标](#修改纹理坐标)
+      - [2.8.3. 数组材质、材质索引.materialIndex](#283-数组材质材质索引materialindex)
+      - [2.8.4. 纹理对象Texture阵列、偏移、旋转](#284-纹理对象texture阵列偏移旋转)
+      - [2.8.5. 数据纹理对象DataTexture](#285-数据纹理对象datatexture)
+      - [2.8.6. 凹凸贴图bumpMap和法线贴图.normalMap,光照贴图添加阴影(·lightMap),高光贴图(.specularMap),环境贴图(.envMap)](#286-凹凸贴图bumpmap和法线贴图normalmap光照贴图添加阴影lightmap高光贴图specularmap环境贴图envmap)
+    - [2.9. 相机对象](#29-相机对象)
+      - [2.9.1. 正投影相机OrthographicCamera和透视投影相机PerspectiveCamera](#291-正投影相机orthographiccamera和透视投影相机perspectivecamera)
+        - [正投影相机对象OrthographicCamera](#正投影相机对象orthographiccamera)
+        - [透视投影相机PerspectiveCamera](#透视投影相机perspectivecamera)
+    - [2.10. 文字 TextGeometry](#210-文字-textgeometry)
+      - [生成字体json文件](#生成字体json文件)
+    - [2.11. 帧动画模块](#211-帧动画模块)
+    - [2.12. 骨骼动画、变形动画](#212-骨骼动画变形动画)
+      - [Bone](#bone)
+      - [骨架Skeleton](#骨架skeleton)
+      - [Geometry(.skinWeights和.skinIndices属性)](#geometryskinweights和skinindices属性)
+      - [骨骼网格模型SkinnedMesh](#骨骼网格模型skinnedmesh)
+    - [2.13. 语音模块](#213-语音模块)
+    - [2.14. 模型文件加载](#214-模型文件加载)
+      - [Threejs导出模型信息](#threejs导出模型信息)
+    - [2.15. 性能分析，及优化](#215-性能分析及优化)
+      - [2.15.1. 性能监视器Stats](#2151-性能监视器stats)
+      - [2.15.4. 性能关键点](#2154-性能关键点)
 
 ## webgl
 
@@ -45,6 +170,7 @@ gl.drawArrays(primitiveType, offset, count);
 顶点着色器（Vertex Shader）是你写进GLSL 中的一个方法，每个顶点调用一次，在这个方法中做一些数学运算后设置了一个特殊的gl_Position变量， 这个变量就是该顶点转换到裁剪空间中的坐标值，GPU接收该值并将其保存起来。  
 
 WebGL绘制过程包括以下三步：  
+
 1. 获取顶点坐标  
 2. 图元装配（即画出一个个三角形）  
 3. 光栅化（生成片元，即一个个像素点）  
